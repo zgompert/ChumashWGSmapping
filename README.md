@@ -42,7 +42,7 @@ cd /scratch/general/nfs1/u6000989/t_chumash_wgs
 perl BwaMemFork.pl ./*R1.fastq.gz
 ```
 
-This runs the following, which includes pipping the results on to `samtools` (version 1.16) to compress, sort and index the alignments.
+This runs the following, which includes piping the results on to `samtools` (version 1.16) to compress, sort and index the alignments.
 
 ```perl
 #!/usr/bin/perl
