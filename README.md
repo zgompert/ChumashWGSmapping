@@ -44,7 +44,7 @@ perl BwaMemFork.pl ./*R1.fastq.gz
 
 This runs the following, which includes pipping the results on to `samtools` (version 1.16) to compress, sort and index the alignments.
 
-```{perl}
+```perl
 #!/usr/bin/perl
 #
 # alignment with bwa mem 
