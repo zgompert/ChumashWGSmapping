@@ -18,12 +18,12 @@ I aligned the whole genome sequence data to the *T. chumash* genome using `bwa-m
 
 I first indexed the genome.
 
-```{bash}
+```bash
 /uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 index mod_timema_chumash_29Feb2020_N4ago.fasta
 ```
 I then ran the alignments. I copied all of the fastq files to scratch space for this.
 
-```{bash}
+```bash
 #!/bin/bash
 #SBATCH --time=240:00:00
 #SBATCH --nodes=1
