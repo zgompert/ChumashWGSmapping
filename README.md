@@ -14,6 +14,59 @@ I am using our 2020 *T. chumash* genome assembly. This genome is described in [N
 
 # DNA sequence alignment
 
-I aligned the whole genome sequence data to the *T. chumash* genome using `bwa-mem2`.
+I aligned the whole genome sequence data to the *T. chumash* genome using `bwa-mem2` (version 2.0pre2).
+
+I first indexed the genome.
+
+```{bash}
+/uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 index mod_timema_chumash_29Feb2020_N4ago.fasta
+```
+I then ran the alignments. I copied all of the fastq files to scratch space for this.
+
+```{bash}
+#!/bin/bash
+#SBATCH --time=240:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=20
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --job-name=bwa-mem2
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load samtools
+##Version: 1.16 (using htslib 1.16)
+
+cd /scratch/general/nfs1/u6000989/t_chumash_wgs
+
+perl BwaMemFork.pl ./*R1.fastq.gz
+```
+
+This runs the following, which includes pipping the results on to `samtools` (version 1.16) to compress, sort and index the alignments.
+
+```{perl}
+#!/usr/bin/perl
+#
+# alignment with bwa mem 
+#
 
 
+use Parallel::ForkManager;
+my $max = 40;
+my $pm = Parallel::ForkManager->new($max);
+my $genome = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_chumash/hic/mod_timema_chumash_29Feb2020_N4ago.fasta";
+
+FILES:
+foreach $fq1 (@ARGV){
+        $pm->start and next FILES; ## fork
+        $fq2 = $fq1;
+        $fq2 =~ s/R1\.fastq\.gz/R2.fastq.gz/ or die "failed substitution for $fq1\n";
+        $fq1 =~ m/clean\/([A-Za-z0-9]+)/ or die "failed to match id $fq1\n";
+        $ind = $1;
+        $fq1 =~ m/([A-Za-z_\-0-9]+)_1\.fq\.gz$/ or die "failed match for file $fq1\n";
+        $file = $1;
+        system "/uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 mem -t 1 -k 19 -r 1.5 -R \'\@RG\\tID:Tchum-"."$ind\\tLB:Tchum-"."$ind\\tSM:Tchum-"."$ind"."\' $genome $fq1 $fq2 | samtools sort -@ 2 -O BAM -o $ind"."_$file.bam - && samtools index -@ 2 $ind"."_$file.bam\n";
+
+        $pm->finish;
+}
+```
