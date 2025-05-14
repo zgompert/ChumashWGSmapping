@@ -1,12 +1,15 @@
 # ChumashWGSmapping
 Genomic analyses of color and survival in a selection experiment for Timema chumash based on whole genome sequence data
+
 # Data
 
-The DNA sequence data for this project are in `/uufs/chpc.utah.edu/common/home/gompert-group4/data/t_chumash_wgs/`. There are two batches of data: batch 1 = 192 samples, batch 2 = 288 samples (some of the latter are not part of the mapping and selection experiment). See [Nosil et al. 2020](https://www.proquest.com/docview/2473271380?pq-origsite=gscholar&fromopenview=true&sourcetype=Scholarly%20Journals) ([Nosil2020.pdf](https://github.com/user-attachments/files/17368867/Nosil2020.pdf)) for our analyses of GBS data from this same experiment.
+The DNA sequence data for this project are in two places. The first two batches are in `/uufs/chpc.utah.edu/common/home/gompert-group4/data/t_chumash_wgs/`: batch 1 = 192 samples, batch 2 = 288 samples (some of the latter are not part of the mapping and selection experiment). See [Nosil et al. 2020](https://www.proquest.com/docview/2473271380?pq-origsite=gscholar&fromopenview=true&sourcetype=Scholarly%20Journals) ([Nosil2020.pdf](https://github.com/user-attachments/files/17368867/Nosil2020.pdf)) for our analyses of GBS data from this same experiment. The data from the 3rd batch are in `/uufs/chpc.utah.edu/common/home/gompert-group5/data/TchumJan2025/`. Batch 3 includes 541 additioanl *T. chumash*
 
 **batch 1:** These samples were sequenced by GeT (Genotoul) and delivered July 2024. The IDs are at the start of the file names (Tchum-XXX, where XXX denotes the digits after 19_ in the actual file names). There are two files each of forward and reverse reads for each stick insect. 
 
 **batch 2:** These samples were sequenced by GeT (Genotoul) and delivered October 2024. The IDs are again at the start of the file name but here are either 19_XXX (the actual ID we use) or GR806-XX for the non-experimental stick insects.
+
+**batch 3:** These samples were sequenced by GeT (Genotoul) and delivered January 2025. The IDs are again at the start of the file name but here are either 15_XXX. These are all non-experimental *T. chumash* from natural populations. The population information is in `/uufs/chpc.utah.edu/common/home/gompert-group5/data/TchumJan2025/sample_sp_loc_host.dsv'. The GR806-XX samples from batch 2 go with these individuals (i.e., they add to this data set).
 
 The experimental data (color and survival) are in the 2019_Tchumash* files in `/uufs/chpc.utah.edu/common/home/gompert-group4/data/t_chumash_wgs/`.
 
