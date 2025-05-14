@@ -1,5 +1,5 @@
 # ChumashWGSmapping
-Genomic analyses of color and survival in a selection experiment for Timema chumash based on whole genome sequence data
+Genomic analyses of color and survival in a selection experiment for *Timema chumash* based on whole genome sequence data
 
 # Data
 
@@ -175,6 +175,181 @@ This left me with a total of 1020 bam files (one per individual), which can be f
 
 # Variant calling and filtering
 
+I used `bcftools` (version 1.16) to identifty SNPs. This was done in parallel across chromsomes (with chromsome 1 split into four subsets for more efficient processing). The chrom*list files give the chromosome IDs and regions for chromosome 1. The bams file lists all 1020 (deduplicated) bams.
 
+```bash
+#!/bin/sh
+#SBATCH --time=240:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=24
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --job-name=bcf_call
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+
+module load samtools
+## version 1.16
+module load bcftools
+## version 1.16
+
+
+cd /scratch/general/nfs1/u6000989/t_chumash_wgs
+
+perl BcfForkLg.pl chrom*list 
+```
+```perl
+#!/usr/bin/perl
+#
+# samtools/bcftools variant calling by LG 
+#
+
+
+use Parallel::ForkManager;
+my $max = 10;
+my $pm = Parallel::ForkManager->new($max);
+
+my $genome ="/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_chumash/hic/mod_timema_chumash_29Feb2020_N4ago.fasta";
+
+
+foreach $chrom (@ARGV){
+	$pm->start and next; ## fork
+        $chrom =~ /chrom([0-9\.\-a-z]+)/ or die "failed here: $chrom\n";
+	#$chrom =~ /chrom([0-9\.]+)/ or die "failed here: $chrom\n";
+	$out = "o_tchum_chrom$1";
+	system "bcftools mpileup -b bams -d 1000 -f $genome -R $chrom -a FORMAT/DP,FORMAT/AD -q 20 -Q 30 -I -Ou | bcftools call -v -c -p 0.01 -Ov -o $out"."vcf\n";
+
+
+	$pm->finish;
+
+}
+
+$pm->wait_all_children;
+```
+
+I then filtered the SNP set for coverage, missing data, and various tests of bias using my own perl script.
+
+```perl
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+
+# this program filters a vcf file based on overall sequence coverage, number of non-reference reads, number of alleles, and reverse orientation reads
+
+# usage vcfFilter.pl infile.vcf
+#
+# change the marked variables below to adjust settings
+#
+
+#### stringency variables, edits as desired
+## 1020 inds, 2x
+my $minCoverage = 2040; # minimum number of sequences; DP
+my $minAltRds = 10; # minimum number of sequences with the alternative allele; AC
+my $notFixed = 1.0; # removes loci fixed for alt; AF
+my $bqrs = 3; # Z-score base quality rank sum test; BaseQRankSum
+my $mqrs = 3; # Z-score mapping quality rank sum test; MQRankSum
+my $rprs = 3; # Z-score read position rank sum test; ReadPosRankSum
+my $mq = 30; # minimum mapping quality; MQ
+my $miss = 102; # maximum number of individuals with no data = 10%
+##### this set is for GBS
+my $d;
+
+my @line;
+
+my $in = shift(@ARGV);
+open (IN, $in) or die "Could not read the infile = $in\n";
+$in =~ m/^([a-zA-Z_0-9\-]+)\.listvcf$/ or die "Failed to match the variant file\n";
+open (OUT, "> filtered2x_$1.vcf") or die "Could not write the outfile\n";
+
+my $flag = 0;
+my $cnt = 0;
+
+while (<IN>){
+	chomp;
+	$flag = 1;
+	if (m/^\#/){ ## header row, always write
+		$flag = 1;
+	}
+	elsif (m/^Sc/){ ## this is a sequence line, you migh need to edit this reg. expr.
+		$flag = 1;
+		$d = () = (m/\d\/\d:0,0,0:0/g); ## for bcftools call
+		if ($d >= $miss){
+			$flag = 0;
+			##print "fail missing : ";
+		}
+		if (m/[ACTGN]\,[ACTGN]/){ ## two alternative alleles identified
+			$flag = 0;
+			#print "fail allele : ";
+		}
+		@line = split(/\s+/,$_);
+		if(length($line[3]) > 1 or length($line[4]) > 1){
+			$flag = 0;
+			#print "fail INDEL : ";
+		}
+		m/DP=(\d+)/ or die "Syntax error, DP not found\n";
+		if ($1 < $minCoverage){
+			$flag = 0;
+			#print "fail DP : ";
+		}
+## bcftools call version
+	
+		m/DP4=\d+,\d+,(\d+),(\d+)/ or die "Syntax error DP4 not found\n";
+		if(($1 + $2) < $minAltRds){
+			$flag = 0;
+		}
+		m/AF1*=([0-9\.e\-]+)/ or die "Syntax error, AF not found\n";
+		if ($1 == $notFixed){
+			$flag = 0;
+		#	print "fail AF : ";
+		}
+
+## bcftools call verions, these are p-values, use 0.01
+		if(m/BQBZ=([0-9e\-\.]*)/){
+			if (abs($1) > $bqrs){
+				$flag = 0;
+#				print "fail BQRS : ";
+			}
+		}
+		if(m/MQBZ=([0-9e\-\.]*)/){
+			if (abs($1) > $mqrs){
+				$flag = 0;
+#				print "fail MQRS : ";
+			}
+		}
+		if(m/RPBZ=([0-9e\-\.]*)/){
+			if (abs($1) > $rprs){
+				$flag = 0;
+#				print "fail RPRS : ";
+			}
+		}
+		if(m/MQ=([0-9\.]+)/){
+			if ($1 < $mq){
+				$flag = 0;
+#				print "fail MQ : ";
+			}
+		}
+		else{
+			$flag = 0;
+			print "faile no MQ : ";
+		}
+		if ($flag == 1){
+			$cnt++; ## this is a good SNV
+		}
+	}
+	else{
+		print "Warning, failed to match the chromosome or scaffold name regular expression for this line\n$_\n";
+		$flag = 0;
+	}
+	if ($flag == 1){
+		print OUT "$_\n";
+	}
+}
+close (IN);
+close (OUT);
+
+print "Finished filtering $in\nRetained $cnt variable loci\n";
+```
 
 
