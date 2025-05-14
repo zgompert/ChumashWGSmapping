@@ -352,4 +352,11 @@ close (OUT);
 print "Finished filtering $in\nRetained $cnt variable loci\n";
 ```
 
+# TO DO:
 
+- Additional filtering for excessive coverage or high variance in coverage
+- Extract genotype likelihood
+- Split by population or experiment
+- EM estimation of allele frequencies
+- Empirical Bayes estimate of genotype (mode vs mean?) for experimental population only (for now at least)
+- Initial GWA
