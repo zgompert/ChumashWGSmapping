@@ -45,7 +45,7 @@ cd /scratch/general/nfs1/u6000989/t_chumash_wgs
 perl BwaMemFork.pl ./*R1.fastq.gz
 ```
 
-This runs the following, which includes piping the results on to `samtools` (version 1.16) to compress, sort and index the alignments.
+This runs the following, which includes piping the results on to `samtools` (version 1.16) to compress, sort and index the alignments. These steps were done in a few batches.
 
 ```perl
 #!/usr/bin/perl
@@ -73,3 +73,108 @@ foreach $fq1 (@ARGV){
 	$pm->finish;
 }
 ```
+Next, I merge the bam files for each individual (when run in multiple lanes) to generate one bam per individual. I used `samtools` for this.
+
+```bash
+#!/bin/bash
+#SBATCH --time=240:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=20
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --job-name=merge
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load samtools
+##Version: 1.16 (using htslib 1.16)
+cd /scratch/general/nfs1/u6000989/t_chumash_wgs
+
+perl MergeFork.pl 
+```
+```perl
+
+#!/usr/bin/perl
+#
+# merge alignments for each population sample with samtools version 1.16 
+#
+
+
+use Parallel::ForkManager;
+my $max = 20;
+my $pm = Parallel::ForkManager->new($max);
+
+open(IDS,"pids.txt");
+while(<IDS>){
+	chomp;
+	push(@IDs,$_);
+}
+close(IDS);
+
+FILES:
+foreach $id (@IDs){
+	$pm->start and next FILES; ## fork
+        system "samtools merge -c -p -o $id.bam $id"."_*.bam\n";
+	system "samtools index -@ 2 $id.bam\n";
+	$pm->finish;
+}
+
+$pm->wait_all_children;
+```
+I then used `samtools` to mark and remove (`-r` option) PCR duplicates.
+
+```bash
+#!/bin/sh
+#SBATCH --time=240:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=12
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --job-name=dedup
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load samtools
+##Version: 1.16 (using htslib 1.16)
+
+cd /scratch/general/nfs1/u6000989/t_chumash_wgs
+
+
+perl RemoveDupsFork.pl *bam
+```
+```perl
+#!/usr/bin/perl
+#
+# PCR duplicate removal with samtools
+#
+
+
+use Parallel::ForkManager;
+my $max = 24;
+#my $max = 40;
+my $pm = Parallel::ForkManager->new($max);
+
+FILES:
+foreach $bam (@ARGV){
+	$pm->start and next FILES; ## fork
+	$bam =~ m/^([A-Za-z0-9_\-]+)/ or die "failed to match $bam\n";
+	$base = $1;
+	system "samtools collate -o co_$base.bam $bam\n";
+	system "samtools fixmate -m co_$base.bam fix_$base.bam\n";
+	system "samtools sort -o sort_$base.bam fix_$base.bam\n";
+	## using default definition of dups
+	## measure positions based on template start/end (default). = -m t
+	system "samtools markdup -T /scratch/general/nfs1/u6000989/t_chumash_wgs/Dedup/ -r sort_$base.bam dedup_$base.bam\n";
+	$pm->finish;
+}
+
+$pm->wait_all_children;
+```
+
+This left me with a total of 1020 bam files (one per individual), which can be found in `/uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/` (batches 1 and 2) and `/uufs/chpc.utah.edu/common/home/gompert-group5/data/TchumJan2025/` (batch). From this point on, both batches were processed together.
+
+# Variant calling and filtering
+
+
+
+
