@@ -351,7 +351,7 @@ close (OUT);
 
 print "Finished filtering $in\nRetained $cnt variable loci\n";
 ```
-Next I extracted the read depth per SNP and individual from the filtered vcf files. I used this information for additional filtering. Specifically, I wanted to remove SNPs with excessively high coverage (possible paralogs) and with a high coefficient of variation for coverage (i.e., high standard deviation in coverage across individuals relative to the mean). I also identified individuals with very high or very low (there were some rather clear high end outliers that seemed worth getting rid of) coverage. This computations were done in `R`, see xxx, and resulted in vectors of 0s and 1s for SNPs and individuals to drop. I dropped the SNPs first; I will deal with the individuals after the conversion to gl format. I used the following to drop the SNPs, resulting in the morefilter* vcf files.
+Next I extracted the read depth per SNP and individual from the filtered vcf files. I used this information for additional filtering. Specifically, I wanted to remove SNPs with excessively high coverage (possible paralogs) and with a high coefficient of variation for coverage (CV, i.e., high standard deviation in coverage across individuals relative to the mean). I also identified individuals with very high or very low (there were some rather clear high end outliers that seemed worth getting rid of) coverage. This computations were done in `R`, see [CovFilt.R](CovFilt.R), and resulted in vectors of 0s and 1s for SNPs and individuals to drop. For SNPs, I used flagged SNPs to remove with a CV > 1.5 (around the 99.9th percentile) and mean coverage > 3 SDs above the mean (21X per individual). I flagged individuals with mean coverage < 4 (2.5th percentile) or > 40 (a bit above the 90th percentile). I dropped the SNPs first; I will deal with the individuals after the conversion to gl format. I used the following to drop the SNPs, resulting in the morefilter* vcf files.
 
 ```bash
 #!/bin/bash
@@ -414,7 +414,7 @@ foreach $in (@ARGV){
 	print "Finished filtering $in\nRetained $cnt variable loci\n";
 }
 ```
-I then extracted the genotype likelihoods from the filtered vcf files and merged these into a single gl file, called tchum.gl. See xxx. This file contained xxx SNPs.
+I then extracted the genotype likelihoods from the filtered vcf files and merged these into a single gl file, called tchum.gl. See [vcf2gl.pl](vcf2gl.pl). This file contained xxx SNPs.
 
 ```bash
 ## not MAF filter applied, hence 0.0
