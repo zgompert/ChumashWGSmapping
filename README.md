@@ -414,7 +414,7 @@ foreach $in (@ARGV){
 	print "Finished filtering $in\nRetained $cnt variable loci\n";
 }
 ```
-I then extracted the genotype likelihoods from the filtered vcf files and merged these into a single gl file, called tchum.gl. See [vcf2gl.pl](vcf2gl.pl). This file contained xxx SNPs.
+I then extracted the genotype likelihoods from the filtered vcf files and merged these into a single gl file, called tchum.gl. See [vcf2gl.pl](vcf2gl.pl). This file contained 35,061,459 SNPs.
 
 ```bash
 ## not MAF filter applied, hence 0.0
