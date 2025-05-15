@@ -351,11 +351,78 @@ close (OUT);
 
 print "Finished filtering $in\nRetained $cnt variable loci\n";
 ```
+Next I extracted the read depth per SNP and individual from the filtered vcf files. I used this information for additional filtering. Specifically, I wanted to remove SNPs with excessively high coverage (possible paralogs) and with a high coefficient of variation for coverage (i.e., high standard deviation in coverage across individuals relative to the mean). I also identified individuals with very high or very low (there were some rather clear high end outliers that seemed worth getting rid of) coverage. This computations were done in `R`, see xxx, and resulted in vectors of 0s and 1s for SNPs and individuals to drop. I dropped the SNPs first; I will deal with the individuals after the conversion to gl format. I used the following to drop the SNPs, resulting in the morefilter* vcf files.
+
+```bash
+#!/bin/bash
+#SBATCH --time=240:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=20
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --job-name=filter
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+cd /scratch/general/nfs1/u6000989/t_chumash_wgs
+
+perl filterSomeMoreL.pl fil*vcf 
+```
+```perl
+#!/usr/bin/perl
+
+
+# filter vcf files based on coverage
+
+
+open(IN,"KeepSNPs.txt") or die "failed initial read\n";
+while(<IN>){
+	chomp;
+	push(@keep,$_);
+}
+close(IN);
+
+
+foreach $in (@ARGV){
+	open (IN, $in) or die "Could not read the infile = $in\n";
+	$in =~ m/^([a-zA-Z0-9_]+\.vcf)$/ or die "Failed to match the variant file\n";
+	open (OUT, "> morefilter_$1") or die "Could not write the outfile\n";
+
+
+	while (<IN>){
+		chomp;
+		if (m/^\#/){ ## header row, always write
+			$flag = 1;
+		}
+		elsif (m/^Sc/){ ## this is a sequence line, you migh need to edit this reg. expr.
+			$flag = shift(@keep);
+			if ($flag == 1){
+				$cnt++; ## this is a good SNV
+			}
+		}
+		else{
+			print "Warning, failed to match the chromosome or scaffold name regular expression for this line\n$_\n";
+			$flag = 0;
+		}
+		if ($flag == 1){
+			print OUT "$_\n";
+		}
+	}
+	close (IN);
+	close (OUT);
+
+	print "Finished filtering $in\nRetained $cnt variable loci\n";
+}
+```
+I then extracted the genotype likelihoods from the filtered vcf files and merged these into a single gl file, called tchum.gl. See xxx. This file contained xxx SNPs.
+
+```bash
+## not MAF filter applied, hence 0.0
+perl vcf2gl.pl 0.0 morefilter_filtered2x_o_tchum_chrom*vcf
+```
 
 # TO DO:
 
-- Additional filtering for excessive coverage or high variance in coverage
-- Extract genotype likelihood
 - Split by population or experiment
 - EM estimation of allele frequencies
 - Empirical Bayes estimate of genotype (mode vs mean?) for experimental population only (for now at least)
