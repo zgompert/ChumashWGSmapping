@@ -40,6 +40,7 @@ foreach my $in (@ARGV){
 			print OUT "$nind $nloc\n";
 			$word = join (" ", @inds);
 			print OUT "$word\n";
+   			$first = 0;
 		}
 		## read genetic data lines, write gl
 		elsif (m/^ScN4ago_(\d+)\S+\s+(\d+)/){
