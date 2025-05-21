@@ -425,5 +425,15 @@ perl vcf2gl.pl 0.0 morefilter_filtered2x_o_tchum_chrom*vcf
 
 - Split by population or experiment
 - EM estimation of allele frequencies
+
+```bash
+estpEM -i EXP_tchum.gl -o p_EXP_tchum.txt -e 0.001 -m 50 -h 2 
+estpEM -i tchum.gl -o p_tchum.txt -e 0.001 -m 50 -h 2 
+estpEM -i GR8.06_MM_tchum.gl -o p_GR8.06_MM_tchum.txt -e 0.001 -m 50 -h 2 
+estpEM -i GR8.06_Q_tchum.gl -o p_GR8.06_Q_tchum.txt -e 0.001 -m 50 -h 2
+```
+35,061,459 loci, 429 individuals for the experiment.
+
+
 - Empirical Bayes estimate of genotype (mode vs mean?) for experimental population only (for now at least)
 - Initial GWA
