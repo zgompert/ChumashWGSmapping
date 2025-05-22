@@ -481,3 +481,171 @@ The output files are cpntest_EXP_tchum.txt for the posterior mean and mlpntest_E
 
 
 # Genome-wide association mapping of color (and survival?)
+
+Next, I prepared the genetic data for GWA mapping with `gemma`. I did this first for the 2019 data set. I first identified common SNPs within that data set, that is SNPs with a minor allele frequency > 0.01. See [getCommon.R](getCommon.R). I also extracted the scaffold, position and allele information from the vcf files, which I wrote to a file = FullSNPTable.txt. This and the set of common SNPs (KeepSnps.txt) are in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gendat`. I then ran [FormatGeno.pl](FormatGeno.pl) to create the geno file from the model genotype esimate file.
+
+```bash
+#!/bin/bash
+#SBATCH --time=48:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=12
+#SBATCH --account=gompert
+#SBATCH --partition=notchpeak
+#SBATCH --job-name=vcf2gl
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+cd /scratch/general/nfs1/u6000989/t_chumash_wgs
+
+perl FormatGeno.pl KeepSnps.txt FullSNPTable.txt mlpntest_EXP_tchum.txt
+```
+
+```perl
+#!/usr/bin/perl
+#
+# takes a file with a vector of SNPs to keep
+# a snp info file and a genotype fileand generates gemma input
+# example: CommonSnps.txt FullSNPTable.txt mlpntest_EXP_tchum.txt
+
+$kf = shift(@ARGV); ## keep file
+$sf = shift(@ARGV); ## SNP file
+$gf = shift(@ARGV); ## genotype file
+
+## get set of SNPs to keep
+open(IN, $kf) or die "failed to read $kf\n";
+while(<IN>){
+	chomp;
+	push(@keep,$_);
+}
+close(IN);
+
+## get SNP information
+open(IN, $sf) or die;
+while(<IN>){
+	chomp;
+	s/^morefilter_filtered2x_o_tchum_chrom(\d+)\S+\s+/\1:/;
+	s/\s+/ /g;
+	push(@snps,$_);
+}
+close(IN);
+
+print "Formatting genotype file now\n";
+
+## subset and format genotype file
+open(IN, $gf);
+$out = $gf;
+$out =~ s/txt/geno/ or die "failed sub: $out\n";
+open(OUT, "> $out") or die;
+while(<IN>){
+	chomp;
+	$k = shift(@keep);
+	$s = shift(@snps);
+	if($k == 1){
+		$o = "$s $_";
+		$o =~ s/ /, /g;
+		print OUT "$o\n";
+	}
+}
+close(IN);
+close(OUT);
+```
+Next, working in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gemma`, I preprated the phenotypic data for the 2019 experimental popualtion, this includes RG, GB and (binary) survival. Right now survival is across both host treatments (I will split this by host later as that makes the most sense). See [FormatPheno.R](FormatPheno.R).
+
+I also got data on observed heterzygosity, deviations between observed and expected heterozygosity and allele frequencies to filter out potentially problematic SNPs. See [GetHetPdata.R](GetHetPdata.R). I used this information to create a subset geno file that keeps only SNPs with deviations between observed and expected heterozygosity < .2. See [SubSetHetGeno.R](SubSetHetGeno.R). I ran initial LMM analyses on color and surival on the geno file before subsetting, though I then did some subsetting in plots after the fact. 
+
+For the LMM.
+
+```bash
+#!/bin/bash
+#SBATCH --time=96:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=12
+#SBATCH --account=wolf-kp
+#SBATCH --partition=wolf-kp
+#SBATCH --job-name=gemma
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load gemma
+# 0.95a
+
+cd /uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gemma
+
+## RG 
+gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_RG -maf 0
+gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_RG.cXX.txt -lmm 4 -n 1 -o o_RG -maf 0
+
+## GB 
+gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_GB -maf 0
+gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_GB.cXX.txt -lmm 4 -n 2 -o o_GB -maf 0
+
+## Surv 
+#gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_SURV -maf 0
+gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_SURV.cXX.txt -lmm 4 -n 3 -o o_SURV -maf 0
+```
+This was summarized with [summarizeGwa.R](summarizeGwa.R).
+
+Next, I ran the BSLMM with the subset version.
+
+```bash
+#!/bin/bash
+#SBATCH --time=240:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=12
+#SBATCH --account=wolf-kp
+#SBATCH --partition=wolf-kp
+#SBATCH --job-name=gemma
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load gemma
+# 0.95a
+
+cd /uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gemma
+
+## RG 
+gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_poly_RG -maf 0
+gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_poly_RG.cXX.txt -lmm 4 -n 1 -o o_poly_RG -maf 0
+
+## GB 
+gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_poly_GB -maf 0
+gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_poly_GB.cXX.txt -lmm 4 -n 2 -o o_poly_GB -maf 0
+
+## Surv 
+gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_poly_SURV -maf 0
+gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_poly_SURV.cXX.txt -lmm 4 -n 3 -o o_poly_SURV -maf 0
+
+## now polygenic BSLMM
+perl forkRunGemma.pl
+```
+The perl script is:
+```perl
+#!/usr/bin/perl
+#
+# fit gemma BSLMM for T. chumash color 
+#
+
+use Parallel::ForkManager;
+my $max = 40;
+my $pm = Parallel::ForkManager->new($max);
+
+$g = "hsub_mlpntest_EXP_tchum.geno";
+$p = "ph_tchum2019.txt";
+
+
+foreach $ph (1..2){ 
+	foreach $ch (0..29){
+		sleep 2;
+		$pm->start and next;
+		$o = "o_poly_bslmm_ph$ph"."_ch$ch";
+		if($ph == 1){
+	    		system "gemma -g $g -p $p -bslmm 1 -n $ph -o $o -maf 0 -w 200000 -s 1000000 -k output/o_poly_RG.cXX.txt\n";
+		} elsif($ph == 2){
+	    		system "gemma -g $g -p $p -bslmm 1 -n $ph -o $o -maf 0 -w 200000 -s 1000000 -k output/o_poly_GB.cXX.txt\n";
+		}
+		$pm->finish;
+	}
+}
+$pm->wait_all_children;
+```
+
