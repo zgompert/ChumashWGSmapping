@@ -477,7 +477,7 @@ cd /scratch/general/nfs1/u6000989/t_chumash_wgs
 ## posterior mean
 ./gl2genest pp_EXP_tchum.txt EXP_tchum.gl
 ```
-The output files are cpntest_EXP_tchum.txt for the posterior mean and mlpntest_EXP_tchum.txt for the posterior mode. These are for the 2019 experiment and contain 429 individuals and xxx SNPs.
+The output files are cpntest_EXP_tchum.txt for the posterior mean and mlpntest_EXP_tchum.txt for the posterior mode. These are for the 2019 experiment and contain 429 individuals (columns) and 35,061,459 SNPs (rows). These files, along with the gl files, are in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gendat/`.
 
 
 # Genome-wide association mapping of color (and survival?)
