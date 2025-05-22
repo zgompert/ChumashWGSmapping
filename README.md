@@ -423,7 +423,26 @@ I then extracted the genotype likelihoods from the filtered vcf files and merged
 perl vcf2gl.pl 0.0 morefilter_filtered2x_o_tchum_chrom*vcf
 ```
 
-# TO DO:
+# Genotype and allele frequency estimation
+
+We had 35,061,459 in the initial genotype likelihood file, tchum.gl. I split this initially into files by population (locality and host). I then went back and did a second split to have a combiend GR8.06 (not by Q and MM) as this will be useful for mapping (I still might want by host for allele frequencies, etc.). As part of this process, I removed individuals with low coverage (based on depth.txt, depth extracted from the vcf files) and flagged SNPs with low coverage to remove later. This was done with [CovFilt.R](CovFilt.R). This wrote the files KeepInds.txt and KeepSNPs.txt. Low coverage individuals were split into a NA population (for the trash). 
+
+```bash
+#!/bin/bash
+#SBATCH --time=240:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=12
+#SBATCH --account=gompert-kp
+#SBATCH --partition=gompert-kp
+#SBATCH --job-name=glsplit
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+cd /scratch/general/nfs1/u6000989/t_chumash_wgs
+
+perl splitPops.pl tchum.gl 
+```
+Which runs [splitPops.pl](splitPops.pl).
 
 - Split by population or experiment
 - EM estimation of allele frequencies
