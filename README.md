@@ -446,17 +446,38 @@ Which runs [splitPops.pl](splitPops.pl).
 
 The GR8.06 file was made with [splitPops2.pl](splitPops2.pl).
 
-- Split by population or experiment
-- EM estimation of allele frequencies
+Next, I used my expectation-maximization program, `estpEM` (version 0.1) (from [Soria-Carrasco et al 204](https://www.science.org/doi/full/10.1126/science.1252136)), to estimate population allele frequencies.  
 
 ```bash
 estpEM -i EXP_tchum.gl -o p_EXP_tchum.txt -e 0.001 -m 50 -h 2 
 estpEM -i tchum.gl -o p_tchum.txt -e 0.001 -m 50 -h 2 
 estpEM -i GR8.06_MM_tchum.gl -o p_GR8.06_MM_tchum.txt -e 0.001 -m 50 -h 2 
 estpEM -i GR8.06_Q_tchum.gl -o p_GR8.06_Q_tchum.txt -e 0.001 -m 50 -h 2
+estpEM -i GR8.06_tchum.gl -o p_GR8.06_tchum.txt -e 0.001 -m 50 -h 2 ## need to run this last one still
 ```
-35,061,459 loci, 429 individuals for the experiment.
+These files include allele frquency estimates for 35,061,459 loci, with 429 individuals from the 2019 experiment (Horse Flats) and xxxx from the 2015 GR8.06 population.
+
+I then obtained Bayesian estiamtes of genotypes using the allele frequency priors (under assuming HW genotype frequencies as prior expectations). I did this using both the posterior mode and mean. I am processing the results from the mode first, but want to see how much this matters. I used new C programs, based on my older perl script, for the empirical Bayes genotype esimates, see [gl2genest.c](gl2genest.c) and [gl2genestMax.c](gl2genestMax.c).
+
+```bash
+#!/bin/bash
+#SBATCH --time=48:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=12
+#SBATCH --account=gompert
+#SBATCH --partition=kingspeak
+#SBATCH --job-name=gl2g
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+cd /scratch/general/nfs1/u6000989/t_chumash_wgs
+
+## posterior mode
+./gl2genestMax pp_EXP_tchum.txt EXP_tchum.gl
+## posterior mean
+./gl2genest pp_EXP_tchum.txt EXP_tchum.gl
+```
+The output files are cpntest_EXP_tchum.txt for the posterior mean and mlpntest_EXP_tchum.txt for the posterior mode. These are for the 2019 experiment and contain 429 individuals and xxx SNPs.
 
 
-- Empirical Bayes estimate of genotype (mode vs mean?) for experimental population only (for now at least)
-- Initial GWA
+# Genome-wide association mapping of color (and survival?)
