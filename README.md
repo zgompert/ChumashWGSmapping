@@ -444,6 +444,8 @@ perl splitPops.pl tchum.gl
 ```
 Which runs [splitPops.pl](splitPops.pl).
 
+The GR8.06 file was made with [splitPops2.pl](splitPops2.pl).
+
 - Split by population or experiment
 - EM estimation of allele frequencies
 
