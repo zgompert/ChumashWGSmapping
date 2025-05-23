@@ -453,9 +453,9 @@ estpEM -i EXP_tchum.gl -o p_EXP_tchum.txt -e 0.001 -m 50 -h 2
 estpEM -i tchum.gl -o p_tchum.txt -e 0.001 -m 50 -h 2 
 estpEM -i GR8.06_MM_tchum.gl -o p_GR8.06_MM_tchum.txt -e 0.001 -m 50 -h 2 
 estpEM -i GR8.06_Q_tchum.gl -o p_GR8.06_Q_tchum.txt -e 0.001 -m 50 -h 2
-estpEM -i GR8.06_tchum.gl -o p_GR8.06_tchum.txt -e 0.001 -m 50 -h 2 ## need to run this last one still
+estpEM -i GR8.06_tchum.gl -o p_GR8.06_tchum.txt -e 0.001 -m 50 -h 2 
 ```
-These files include allele frquency estimates for 35,061,459 loci, with 429 individuals from the 2019 experiment (Horse Flats) and xxxx from the 2015 GR8.06 population.
+These files include allele frquency estimates for 35,061,459 loci, with 429 individuals from the 2019 experiment (Horse Flats) and 555 from the 2015 GR8.06 population.
 
 I then obtained Bayesian estiamtes of genotypes using the allele frequency priors (under assuming HW genotype frequencies as prior expectations). I did this using both the posterior mode and mean. I am processing the results from the mode first, but want to see how much this matters. I used new C programs, based on my older perl script, for the empirical Bayes genotype esimates, see [gl2genest.c](gl2genest.c) and [gl2genestMax.c](gl2genestMax.c).
 
@@ -474,8 +474,10 @@ cd /scratch/general/nfs1/u6000989/t_chumash_wgs
 
 ## posterior mode
 ./gl2genestMax pp_EXP_tchum.txt EXP_tchum.gl
+./gl2genestMax pp_GR8.06_tchum.txt GR8.06_tchum.gl
 ## posterior mean
 ./gl2genest pp_EXP_tchum.txt EXP_tchum.gl
+./gl2genest pp_GR8.06_tchum.txt GR8.06_tchum.gl
 ```
 The output files are cpntest_EXP_tchum.txt for the posterior mean and mlpntest_EXP_tchum.txt for the posterior mode. These are for the 2019 experiment and contain 429 individuals (columns) and 35,061,459 SNPs (rows). These files, along with the gl files, are in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gendat/`.
 
