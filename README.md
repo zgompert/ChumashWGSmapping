@@ -653,7 +653,7 @@ $pm->wait_all_children;
 
 I summarized the results from the chains, see [calpost.pl](calpost.pl) and [grabPips.pl](grabPips.pl), and then summarized the mapping analysis in R [summarizeGwaPoly.R](summarizeGwaPoly.R).
 
-I next repeated all of the above (but with subsetting first) for GR8.06. See [FormatPhenoGR8.R](FormatPhenoGR8.R), [GetHetPdataGR8.R](GetHetPdataGR8.R), [SubSetHetGenoGR8.R], [summarizeGwaGR.R](summarizeGwaGR.R), [grabPipsGR8.pl](grabPipsGR8.pl) and [summarizeGwaPolyGR.R](summarizeGwaPolyGR.R). 
+I next repeated all of the above (but with subsetting first) for GR8.06. See [FormatPhenoGR8.R](FormatPhenoGR8.R), [GetHetPdataGR8.R](GetHetPdataGR8.R), [SubSetHetGenoGR8.R](SubSetHetGenoGR8.R), [summarizeGwaGR.R](summarizeGwaGR.R), [grabPipsGR8.pl](grabPipsGR8.pl) and [summarizeGwaPolyGR.R](summarizeGwaPolyGR.R). 
 
 I put all of the figures we have so far on [google drive folder](https://drive.google.com/drive/folders/1eIxAUx4Up3Opkr4DiMcKhPcZjayXjwke?usp=sharing). The file names denote the population (GR8 for GR8.06 and 2019 for Horse Flats), the analysis (SSNP = single SNP LMM vs poply = BSLMM), the trait (GB or GR) and whether the plot is for the whole genome (nothing extra in the name) or just chromosome 8 (Ch8). All combinations of these are included for 16 plots (files total).
 
