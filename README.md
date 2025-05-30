@@ -668,3 +668,36 @@ Based on the PIPs, we have 3.2 and 3.6 QTN for RG and GB (respectively) on Ch8 i
 # Comparative genome alignments, *T. chumash* with old melanic and phased *T. cristinae*
 
 Here, I am mosly interested in cross-referencing the old color signal (from melanic deletion thinking) with the new *T. cristiane* genomes and the new *T. chumash* mapping results, which are based on the *T. chumash* genome coordinate system.
+
+## *T. chumash* genome annotation with BRAKER3
+
+```bash
+#!/bin/bash 
+#SBATCH --time=240:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=24
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --job-name=braker
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+source ~/.bashrc
+
+ml braker/3.0.8
+ml busco
+
+cd /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/Annotation/t_chumash
+
+## run braker
+braker.pl --genome=/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_chumash/hic/timema_chumash_29Feb2020_N4ago.Chrom.fasta.masked --prot_seq=../proteins.fasta --rnaseq_sets_ids=tcr135.17_0003_R,tcr137.17_0006_R,tcr139.17_0012_R,tcr140.17_0015_R,tcr141.17_0019_R,tcr142.17_0043_R,tcr143.17_0045_R,tcr144.17_0049_R,tcr145.17_0051_R,tcr146.17_0057_R,tcr148.17_0062_R,tcr149.17_0065_R,tcr150.17_0067_R,tcr151.17_0070_R,tcr152.17_0074_R,tcr173.17_0075_R,tcr174.17_0081_R,tcr175.17_0082_R --rnaseq_sets_dirs=/scratch/general/nfs1/u6000989/rna/ --AUGUSTUS_SCRIPTS_PATH=/usr/share/augustus/scripts --AUGUSTUS_CONFIG_PATH=/uufs/chpc.utah.edu/common/home/u6000989/augustus/config --threads=48 --gff3
+
+## run busco, genome and aa
+cd braker
+
+## genome
+busco -i /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_chumash/hic/timema_chumash_29Feb2020_N4ago.Chrom.fasta.masked -m geno -o busco_genome_out -l insecta_odb10
+
+## amino acids
+busco -i braker.aa -m prot -o busco_aa_out -l insecta_odb10
+```
