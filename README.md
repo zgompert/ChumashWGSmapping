@@ -587,7 +587,7 @@ gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_SURV.cXX.txt -
 ```
 This was summarized with [summarizeGwa.R](summarizeGwa.R).
 
-Next, I ran the BSLMM with the subset version.
+Next, I ran the BSLMM with the subset version. I ran 60 chains total.
 
 ```bash
 #!/bin/bash
@@ -636,7 +636,7 @@ $p = "ph_tchum2019.txt";
 
 
 foreach $ph (1..2){ 
-	foreach $ch (0..29){
+	foreach $ch (0..59){
 		sleep 2;
 		$pm->start and next;
 		$o = "o_poly_bslmm_ph$ph"."_ch$ch";
@@ -651,3 +651,20 @@ foreach $ph (1..2){
 $pm->wait_all_children;
 ```
 
+I summarized the results from the chains, see [calpost.pl](calpost.pl) and [grabPips.pl](grabPips.pl), and then summarized the mapping analysis in R [summarizeGwaPoly.R](summarizeGwaPoly.R).
+
+I next repeated all of the above (but with subsetting first) for GR8.06. See [FormatPhenoGR8.R](FormatPhenoGR8.R), [GetHetPdataGR8.R](GetHetPdataGR8.R), [SubSetHetGenoGR8.R], [summarizeGwaGR.R](summarizeGwaGR.R), [grabPipsGR8.pl](grabPipsGR8.pl) and [summarizeGwaPolyGR.R](summarizeGwaPolyGR.R). 
+
+I put all of the figures we have so far on [google drive folder](https://drive.google.com/drive/folders/1eIxAUx4Up3Opkr4DiMcKhPcZjayXjwke?usp=sharing). The file names denote the population (GR8 for GR8.06 and 2019 for Horse Flats), the analysis (SSNP = single SNP LMM vs poply = BSLMM), the trait (GB or GR) and whether the plot is for the whole genome (nothing extra in the name) or just chromosome 8 (Ch8). All combinations of these are included for 16 plots (files total).
+
+We see fairly similar results in both populations. PVEs (with CIs) are: Horse Flats, RG = 0.75 (0.57-0.92), GB = 0.63 (0.47-0.82); GR8.06, RG = 0.72 (0.60-0.91), GB = 0.60 (0.48-0.76). In both cases the color traits are highly heritable, with slightly higher heritability for RG than GB and similar values in each population.
+
+In all cases we see a clear signal on chromosome 8. There is generally more noise off of 8 (sometimes quite a bit) with the single SNP analyses than the polygenic analyses. In the polygenic analyses, we get a modest number of SNPs with non-trivial PIPs (more details below). For GB in both populations, the signal in the polygenic analyses is very much restricted to chromosome 8. For RG, there is a clear signal on 8 in the polygenic models, but also something going on with chromosome 1 (both populations) with other more modest signals elsewhere.
+
+The overall (total) number of sparse effects (QTN) from gemma is modest and exhibits uncertainty (of course) but not to a crazy extent: Horse Flats, RG = 18 (8-39), GB = 15 (5-53); GR8.06, RG = 10 (7-18), GB = 12 (3-35). Interestingly, there is some evidence that sparse effects matter more for GR8.06 than Horse Flats, though it isn't whopping, based on PGE (proportion of PVE due to sparse effects): Horse Flats, RG = 0.79 (0.60-0.96), GB = 0.77 (0.54-0.97); GR8.06, RG = 0.88 (0.70-0.99), GB = 0.90 (0.70-0.99). This combined with the slightly lower estimates of number of QTN point towards a marginally more concentrated (less polygenic) genetic basis for color at GR8.06 than Horse Flats. The SNPs with the highest PIPs are not the same for RG and GB, but, at least on chromosome 8, they are in the same general region (don't know about gene level yet), at least for the ones with the strongest signal. It also looks like, especially when thinking about RG and GB, we get a few distinct, but nearby peaks. This is all generally consistent with the NEE paper.
+
+Based on the PIPs, we have 3.2 and 3.6 QTN for RG and GB (respectively) on Ch8 in Horse Flats and 3.3 and 3.4 QTN for RG and GB (respectively) on Ch8 in GR8.06. If we only consider PIPs > 0.01 as contributing to these estimates (which gets rid of some of the noise) this drops to 2.2 and 2.2 QTN for RG and GB (respectively) on Ch8 in Horse Flats and 2.9 and 2.5 QTN for RG and GB (respectively) on Ch8 in GR8.06. This contains almost all such SNPS for GB, but more like half of such SNPs for RG (where there is more signal off 8 in the polygenic models).
+
+# Comparative genome alignments, *T. chumash* with old melanic and phased *T. cristinae*
+
+Here, I am mosly interested in cross-referencing the old color signal (from melanic deletion thinking) with the new *T. cristiane* genomes and the new *T. chumash* mapping results, which are based on the *T. chumash* genome coordinate system.
