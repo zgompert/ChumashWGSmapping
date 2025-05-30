@@ -669,6 +669,60 @@ Based on the PIPs, we have 3.2 and 3.6 QTN for RG and GB (respectively) on Ch8 i
 
 Here, I am mosly interested in cross-referencing the old color signal (from melanic deletion thinking) with the new *T. cristiane* genomes and the new *T. chumash* mapping results, which are based on the *T. chumash* genome coordinate system.
 
+I already have the psl file from the alignment of *T. chumash* to the *T. cristinae* melanic, see out_synteny_chumash_melanic.psl. This is what we used for the NEE paper. The genomes I am using beyond this are the *T. chumash*, T. cristinae* melanic, *T. cristinae* GSH1 and *T. cristinae* GUSH2 (both featured in our recent Science paper). Here is what I have going:
+
+```bash
+#!/bin/bash 
+#SBATCH --time=240:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=18
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --job-name=cactus
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load cactus
+
+cd /scratch/general/nfs1/u6000989/cactus
+
+perl CactusForkColor.pl
+```
+Which runs:
+
+```perl
+#!/usr/bin/perl
+#
+# cactus batch run 
+#
+
+
+use Parallel::ForkManager;
+my $max = 4;
+my $pm = Parallel::ForkManager->new($max);
+
+
+@comps = ("cactusColor_TcrGSH1_Tchum.txt","cactusColor_TcrGUSH2_Tchum.txt","cactusColor_TcrGSH1_TcrM.txt","cactusColor_TcrGUSH2_TcrM.tx");
+
+@ids1 = ("t_cris_h_gs1","t_cris_h_gus2","t_cris_h_gs1","t_cris_h_gus2");
+@ids2 = ("t_chum","t_chum","t_cris_m","t_cris_m");
+
+FILES:
+foreach $file (@comps){
+	$id1 = shift(@ids1);
+	$id2 = shift(@ids2);
+	$pm->start and next FILES; ## fork
+	$file =~ m/cactusColor_([a-zA-Z0-9]+)_([a-zA-Z]+)/ or die "failed here $file\n";
+	$base = "$1_$2";
+	system "cactus jobStore_$base /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/comp_aligns/$file cactus$base.hal --maxCores 24\n";
+	system "~/source/hal/bin/halSynteny --queryGenome $id2 --targetGenome $id1 cactus$base.hal out_synteny_$base.psl\n";
+	
+	$pm->finish;
+}
+
+$pm->wait_all_children;
+```
+
 ## *T. chumash* genome annotation with BRAKER3
 
 ```bash
