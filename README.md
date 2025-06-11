@@ -669,7 +669,7 @@ Based on the PIPs, we have 3.2 and 3.6 QTN for RG and GB (respectively) on Ch8 i
 
 Here, I am mosly interested in cross-referencing the old color signal (from melanic deletion thinking) with the new *T. cristiane* genomes and the new *T. chumash* mapping results, which are based on the *T. chumash* genome coordinate system.
 
-I already have the psl file from the alignment of *T. chumash* to the *T. cristinae* melanic, see out_synteny_chumash_melanic.psl. This is what we used for the NEE paper. The genomes I am using beyond this are the *T. chumash*, T. cristinae* melanic, *T. cristinae* GSH1 and *T. cristinae* GUSH2 (both featured in our recent Science paper). Here is what I have going:
+I already have the psl file from the alignment of *T. chumash* to the *T. cristinae* melanic, see out_synteny_chumash_melanic.psl. This is what we used for the NEE paper. The genomes I am using beyond this are the *T. chumash*, *T. cristinae* melanic, *T. cristinae* GSH1 and *T. cristinae* GUSH2 (both featured in our recent Science paper). Here is what I have going:
 
 ```bash
 #!/bin/bash 
@@ -722,6 +722,7 @@ foreach $file (@comps){
 
 $pm->wait_all_children;
 ```
+I did an initial analysis/investigation of the results (the *T. chumash* ones were actually still running but I the relevant chromosomes were done). The psl files are now in `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/comp_aligns` (but I need to recopy the *T. chumash* ones from scratch once they fully finish). I focused only on chromosome 8 for alignments, see [SynPlotsColorChum.R](SynPlotsColorChum.R). My preliminary plots show that basically have a 1:1 relationship between GSH1 and melanic *T. cristinae* with no compelling evidence of SV. There is an apparent gap (missing scaffold)  between sc1845 and sc128 but this could be simply missing from the melanic assembly not the melanic genome. In contrast, GUSH2 (green haplotype) vs melanic recovers the inverted translocation (see scaffolds 702.1 and 128) (The plot is sort of backwards and upside relative to the plots in the Science paper because the melanic coordinate system is flipped, but the SV looks basically the same, which makes sense given the 1:1 between melanic and striped weware seeing here). Mel-Stripe mostly corresponds with the inverted translocation, though one of the inverted bits isn't fully included. There is no evidence of the deletion from past comparisons between green and melanic, which either means that the coverage and alignment signal resulted from some other form of SV or that the deletion is segregating. For *T. chumash*: (i) the genome is colinear with the striped haplotype rather than the green for the inverted translocation (remeber that stripe matches melanic), (ii) the GWA signal for *T. chumash* overlaps with the translocated inversion, and (iii) it  pecifically overlaps with the colinear bit of the translocation rather than the inverted bit, and it was this colinear bit that was associated with pattern on both refugio and Hwy154.
 
 ## *T. chumash* genome annotation with BRAKER3
 
