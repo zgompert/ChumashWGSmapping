@@ -758,3 +758,20 @@ busco -i braker.aa -m prot -o busco_aa_out -l insecta_odb10
 ```
 
 The annotation above resulted in xxx gene models. I suspect the low number is due to the limited amount of external evidence, especially in terms of RNA sequence data. I am going to try again with additional data from other *Timema* species, specifically 24 RNAseq samples from [Djordjevic et al. 2022](https://www.nature.com/articles/s41437-022-00536-y) (NCBI [PRJNA678950](https://www.ncbi.nlm.nih.gov/sra/?term=PRJNA678950); male and female *T. californicum* hatchling, juveniles and adults) and 232 RNAseq samples from [Djordjevic et al. 2025](https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1011615) (NCBI [PRJNA1128554](https://www.ncbi.nlm.nih.gov/sra/?term=PRJNA1128554); leg, brain, antennae, gut and gonads from male and female *T. poppense* and *T. douglasi* from multiple developmental stages). I am downloading these data with `sra-toolkit` to /scratch/general/nfs1/u6000989/rna_expand`. I need to convert these to fastq and then verify whether or not any filtering needs to be done before retrying the annotation.
+
+UPDATE with new annotation results (it worked).
+
+# Looking at candidate genes
+
+NEED to add details here.
+
+In the single SNP GWA, we have 3 peaks of association between ~55 and ~63 Mbp on chromosome 8 (thus spanning a ~8 Mbp region). For the polygenic mapping, the RG signal is at ~59 Mbp and the GB signal is at ~56 and ~59 Mbp. 
+
+I checked out Romain's candidate genes. We have what looks like two tandem copies of Punch, one shorter than the other. These are at ~34 Mbp on chromosome 8 (about 20 Mbp from the main signal, though there are likely some SNPs with weaker p-value signals closer to these genes). We laso have Chitinase5, which is at ~67.5 Mbp on chromosome 8. None of our annotated genes are good matches for Scarlet (st), though some have a modest similarity. This means either we failed to annotate it (which probably means it was not being expressed in any of the >100 transcriptomes) or it is not present in the T. chumash genome. So, none of his candidates is especially compelling in the current data set.
+
+I also checked our pattern candidates. We have a single copy of corazonin, but it is ast ~77 Mbp, so again, somewhat off from the main signal. The only previous candidate withiin the overall range (though not right at 56 or 59 Mbp) is the ecdysteriod kinase.
+
+The main region with the 3 peaks on chromosome 8 (~55 to ~63 Mbp) also contains a cytochrome P450, and those do all kinds of stuff (and have been linked to color). And right at the far left edge (right where it starts) there is a reverse transcriptase suggestive of a TE insertion. Still, it just seems like an ever growing list of genes and one that isn't really replicating (other than the region, and many genes but not the best candidates, generally coinciding). I was also a bit struck by how big the single SNP GWA signal is: ~8 Mbp.
+
+This brings me to two next steps (with gene expression stuff maybe step 3). First, I want to look at LD across the region and outside of it. I am now wondering about some more minor SV and what to see if there are LD peaks/blocks coinciding with the three peaks. Second, I want to try the polygenic model with only chromosome 8 and see if this alters the SNPs we pick up and the PVE. I want to get a feel for how much to trust them specifically vs the more general three peaks of association. I am also starting to wonder if the causally locus is not a gene at all but rather perhaps some sort of non-coding RNA that regulates something else or something more complicated like that.
+
