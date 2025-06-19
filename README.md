@@ -757,9 +757,127 @@ busco -i /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/
 busco -i braker.aa -m prot -o busco_aa_out -l insecta_odb10
 ```
 
-The annotation above resulted in xxx gene models. I suspect the low number is due to the limited amount of external evidence, especially in terms of RNA sequence data. I am going to try again with additional data from other *Timema* species, specifically 24 RNAseq samples from [Djordjevic et al. 2022](https://www.nature.com/articles/s41437-022-00536-y) (NCBI [PRJNA678950](https://www.ncbi.nlm.nih.gov/sra/?term=PRJNA678950); male and female *T. californicum* hatchling, juveniles and adults) and 232 RNAseq samples from [Djordjevic et al. 2025](https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1011615) (NCBI [PRJNA1128554](https://www.ncbi.nlm.nih.gov/sra/?term=PRJNA1128554); leg, brain, antennae, gut and gonads from male and female *T. poppense* and *T. douglasi* from multiple developmental stages). I am downloading these data with `sra-toolkit` to /scratch/general/nfs1/u6000989/rna_expand`. I need to convert these to fastq and then verify whether or not any filtering needs to be done before retrying the annotation.
+The annotation above resulted in 6151 gene models. I suspect the low number is due to the limited amount of external evidence, especially in terms of RNA sequence data. 
 
-UPDATE with new annotation results (it worked).
+I tried again with additional data from other *Timema* species, specifically 24 RNAseq samples from [Djordjevic et al. 2022](https://www.nature.com/articles/s41437-022-00536-y) (NCBI [PRJNA678950](https://www.ncbi.nlm.nih.gov/sra/?term=PRJNA678950); male and female *T. californicum* hatchling, juveniles and adults) and 232 RNAseq samples from [Djordjevic et al. 2025](https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1011615) (NCBI [PRJNA1128554](https://www.ncbi.nlm.nih.gov/sra/?term=PRJNA1128554); leg, brain, antennae, gut and gonads from male and female *T. poppense* and *T. douglasi* from multiple developmental stages). I downloaded these `sra-toolkit` to /scratch/general/nfs1/u6000989/rna_expand`, see [grapSRA.pl](grapSRA.pl). 
+
+```perl
+#!/usr/bin/perl
+#
+
+# ml sra-toolkit
+
+open(IN,"SRAids2.txt") or die;
+#open(IN,"SRAids.txt") or die;
+while(<IN>){
+	chomp;
+	system "prefetch $_\n";
+}
+```
+
+And then extracted the fastq data from the SRA files, see [forkFastqDump.pl](forkFastqDump.pl):
+
+```perl
+#!/usr/bin/perl
+#
+# sra to fastq 
+#
+
+# ml sra-toolkit
+
+use Parallel::ForkManager;
+my $max = 24;
+my $pm = Parallel::ForkManager->new($max);
+
+DIR:
+foreach $sra (@ARGV){
+	$pm->start and next DIR; ## fork
+        system "fasterq-dump ./$sra\n";
+	$pm->finish;
+}
+```
+Finally, I then trimmed all of the RNA seqeunces in a consistent manner with `trimmomatic` (version 0.39), see [TrimReadsSimple.sh](TrimReadsSimple.sh).
+
+```bash
+#!/bin/sh 
+#SBATCH --time=96:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=24
+#SBATCH --account=gompert-kp
+#SBATCH --partition=gompert-kp
+#SBATCH --job-name=trimm
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+
+ml trimmomatic/0.39
+
+cd /scratch/general/nfs1/u6000989/rna_expand
+
+
+# Loop over the input files passed as arguments
+for fq1 in "$@"; do
+  # Determine the second file by replacing _1.fastq with _2.fastq
+  fq2="${fq1/_1.fastq/_2.fastq}"
+
+  # Check if the second file exists
+  if [ ! -f "$fq2" ]; then
+    echo "Error: $fq2 not found for $fq1. Skipping..."
+    continue
+  fi
+
+    trimmomatic PE -threads 64 -phred33 "$fq1" "$fq2" \
+      "clean_$fq1" "unpaired_$fq1" \
+      "clean_$fq2" "unpaired_$fq2" \
+      ILLUMINACLIP:Illumina_TruSeq.fa:2:30:8 \
+      LEADING:20 TRAILING:20 SLIDINGWINDOW:4:20 MINLEN:35
+done
+```
+I then re-ran the annotation with the added RNA sequence data as shown below.
+
+```bash
+#!/bin/bash 
+#SBATCH --time=240:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=24
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --job-name=braker
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+source ~/.bashrc
+
+ml braker/3.0.8
+ml busco
+#mkdir ~/augustus
+#containerShell
+#cp /usr/share/augustus/config ~/augustus
+#exit
+
+#cd
+#mv ~/augustus/config ~/augustus/config-old
+#ml braker/3.0.8
+#containerShell
+#cp -r /opt/Augustus/config ~/augustus/
+#exit
+
+cd /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/Annotation/t_chumash
+
+## run braker
+braker.pl --genome=/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_chumash/hic/timema_chumash_29Feb2020_N4ago.Chrom.fasta.masked --prot_seq=../proteins.fasta --rnaseq_sets_ids=clean_SRR13084978,clean_SRR13084979,clean_SRR13084980,clean_SRR13084981,clean_SRR13084982,clean_SRR13084983,clean_SRR13084984,clean_SRR13084985,clean_SRR13084986,clean_SRR13084987,clean_SRR13084988,clean_SRR13084989,clean_SRR13084990,clean_SRR13084991,clean_SRR13084992,clean_SRR13084993,clean_SRR13084994,clean_SRR13084995,clean_SRR13084996,clean_SRR13084997,clean_SRR30782345,clean_SRR30782346,clean_SRR30782347,clean_SRR30782348,clean_SRR30782349,clean_SRR30782350,clean_SRR30782351,clean_SRR30782352,clean_SRR30782353,clean_SRR30782354,clean_SRR30782355,clean_SRR30782356,clean_SRR30782357,clean_SRR30782358,clean_SRR30782359,clean_SRR30782360,clean_SRR30782361,clean_SRR30782362,clean_SRR30782363,clean_SRR30782364,clean_SRR30782365,clean_SRR30782366,clean_SRR30782367,clean_SRR30782368,clean_SRR30782369,clean_SRR30782370,clean_SRR30782371,clean_SRR30782372,clean_SRR30782373,clean_SRR30782374,clean_SRR30782375,clean_SRR30782376,clean_SRR30782377,clean_SRR30782378,clean_SRR30782379,clean_SRR30782380,clean_SRR30782381,clean_SRR30782382,clean_SRR30782383,clean_SRR30782384,clean_SRR30782385,clean_SRR30782386,clean_SRR30782387,clean_SRR30782388,clean_SRR30782389,clean_SRR30782390,clean_SRR30782391,clean_SRR30782392,clean_SRR30782393,clean_SRR30782394,clean_SRR30782395,clean_SRR30782396,clean_SRR30782397,clean_SRR30782398,clean_SRR30782399,clean_SRR30782400,clean_SRR30782401,clean_SRR30782402,clean_SRR30782403,clean_SRR30782404,clean_SRR30782405,clean_SRR30782406,clean_SRR30782407,clean_SRR30782408,clean_SRR30782409,clean_SRR30782410,clean_SRR30782411,clean_SRR30782412,clean_SRR30782413,clean_SRR30782414,clean_SRR30782415,clean_SRR30782416,clean_SRR30782417,clean_SRR30782418,clean_SRR30782419,clean_SRR30782420,clean_SRR30782421,clean_SRR30782422,clean_SRR30782423,clean_SRR30782424,clean_SRR30782425,clean_SRR30782426,clean_SRR30782427,clean_SRR30782428,clean_SRR30782429,clean_SRR30782430,clean_SRR30782431,clean_SRR30782432,clean_SRR30782433,clean_SRR30782434,clean_SRR30782435,clean_SRR30782436,clean_SRR30782437,clean_SRR30782438,clean_SRR30782439,clean_SRR30782440,clean_SRR30782441,clean_SRR30782442,clean_SRR30782443,clean_SRR30782444,clean_SRR30782445,clean_SRR30782446,clean_SRR30782447,clean_SRR30782448,clean_SRR30782449,clean_SRR30782450,clean_SRR30782451,clean_SRR30782452,clean_SRR30782453,clean_SRR30782454,clean_SRR30782455,clean_SRR30782456,clean_SRR30782457,clean_SRR30782458,clean_SRR30782459,clean_SRR30782460,clean_SRR30782461,clean_SRR30782462,clean_SRR30782463,clean_SRR30782464,clean_SRR30782465,clean_SRR30782466,clean_SRR30782467,clean_SRR30782468,clean_SRR30782469,clean_SRR30782470,clean_SRR30782471,clean_SRR30782472,clean_SRR30782473,clean_SRR30782474,clean_SRR30782475,clean_SRR30782476,clean_SRR30782477,clean_SRR30782478,clean_SRR30782479,clean_SRR30782480,clean_SRR30782481,clean_SRR30782482,clean_SRR30782483,clean_SRR30782484,clean_SRR30782485,clean_SRR30782486,clean_SRR30782487,clean_SRR30782488,clean_SRR30782489,clean_SRR30782490,clean_SRR30782491,clean_SRR30782492,clean_SRR30782493,clean_SRR30782494,clean_SRR30782495,clean_SRR30782496,clean_SRR30782497,clean_SRR30782498,clean_SRR30782499,clean_SRR30782500,clean_SRR30782501,clean_SRR30782502,clean_SRR30782503,clean_SRR30782504,clean_SRR30782505,clean_SRR30782506,clean_SRR30782507,clean_SRR30782508,clean_SRR30782509,clean_SRR30782510,clean_SRR30782511,clean_SRR30782512,clean_SRR30782513,clean_SRR30782514,clean_SRR30782515,clean_SRR30782516,clean_SRR30782517,clean_SRR30782518,clean_SRR30782519,clean_SRR30782520,clean_SRR30782521,clean_SRR30782522,clean_SRR30782523,clean_SRR30782524,clean_SRR30782525,clean_SRR30782526,clean_SRR30782527,clean_SRR30782528,clean_SRR30782529,clean_SRR30782530,clean_SRR30782531,clean_SRR30782532,clean_SRR30782533,clean_SRR30782534,clean_SRR30782535,clean_SRR30782536,clean_SRR30782537,clean_SRR30782538,clean_SRR30782539,clean_SRR30782540,clean_SRR30782541,clean_SRR30782542,clean_SRR30782543,clean_SRR30782544,clean_SRR30782545,clean_SRR30782546,clean_SRR30782547,clean_SRR30782548,clean_SRR30782549,clean_SRR30782550,clean_SRR30782551,clean_SRR30782552,clean_SRR30782553,clean_SRR30782554,clean_SRR30782555,clean_SRR30782556,clean_SRR30782557,clean_SRR30782558,clean_SRR30782559,clean_SRR30782560,clean_SRR30782561,clean_SRR30782562,clean_SRR30782563,clean_SRR30782564,clean_SRR30782565,clean_SRR30782566,clean_SRR30782567,clean_SRR30782568,clean_SRR30782569,clean_SRR30782570,clean_SRR30782571,clean_SRR30782572,clean_SRR30782573,clean_SRR30782574,clean_SRR30782575,clean_SRR30782576,clean_tchum_19_0340,clean_tchum_19_0343,clean_tchum_19_0344,clean_tchum_19_0345,clean_tchum_19_0346,clean_tchum_19_0347,clean_tchum_19_0348,clean_tchum_19_0350,clean_tchum_19_0351,clean_tchum_19_0352,clean_tchum_19_0353,clean_tchum_19_0354,clean_tchum_19_0355,clean_tchum_19_0356,clean_tchum_19_0357,clean_tchum_19_0358,clean_tchum_19_0359,clean_tchum_19_0360,clean_tchum_19_0361,clean_tchum_19_0362,clean_tchum_19_0363,clean_tchum_19_0364,clean_tchum_19_0365,clean_tchum_19_0366,clean_tchum_19_0367,clean_tchum_19_0368,clean_tchum_19_0369,clean_tchum_19_0370,clean_tcr135.17_0003_R,clean_tcr137.17_0006_R,clean_tcr139.17_0012_R,clean_tcr140.17_0015_R,clean_tcr141.17_0019_R,clean_tcr142.17_0043_R,clean_tcr143.17_0045_R,clean_tcr144.17_0049_R,clean_tcr145.17_0051_R,clean_tcr146.17_0057_R,clean_tcr148.17_0062_R,clean_tcr149.17_0065_R,clean_tcr150.17_0067_R,clean_tcr151.17_0070_R,clean_tcr152.17_0074_R,clean_tcr173.17_0075_R,clean_tcr174.17_0081_R,clean_tcr175.17_0082_R --rnaseq_sets_dirs=/scratch/general/nfs1/u6000989/rna_expand/ --AUGUSTUS_SCRIPTS_PATH=/usr/share/augustus/scripts --AUGUSTUS_CONFIG_PATH=/uufs/chpc.utah.edu/common/home/u6000989/augustus/config --threads=48 --gff3
+
+## run busco, genome and aa
+cd braker
+
+## genome
+busco -i /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/t_chumash/hic/timema_chumash_29Feb2020_N4ago.Chrom.fasta.masked -m geno -o busco_genome_out -l insecta_odb10
+
+## amino acids
+busco -i braker.aa -m prot -o busco_aa_out -l insecta_odb10
+```
+
+This gave 20,535 gene models, which is much better and what I will use. The annotation is in: /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/Annotation/t_chumash/braker/ (the initial attemp with less RNA data is in brakerv1).
 
 # Looking at candidate genes
 
