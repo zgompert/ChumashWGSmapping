@@ -881,8 +881,6 @@ This gave 20,535 gene models, which is much better and what I will use. The anno
 
 # Looking at candidate genes
 
-NEED to add details here.
-
 In the single SNP GWA, we have 3 peaks of association between ~55 and ~63 Mbp on chromosome 8 (thus spanning a ~8 Mbp region). For the polygenic mapping, the RG signal is at ~59 Mbp and the GB signal is at ~56 and ~59 Mbp. 
 
 I checked out Romain's candidate genes ([Villoutreix et al. 2022](https://royalsocietypublishing.org/doi/full/10.1098/rstb.2020.0508)). We have what looks like two tandem copies of Punch, one shorter than the other. These are at ~34 Mbp on chromosome 8 (about 20 Mbp from the main signal, though there are likely some SNPs with weaker p-value signals closer to these genes). We laso have Chitinase5, which is at ~67.5 Mbp on chromosome 8. None of our annotated genes are good matches for Scarlet (st), though some have a modest similarity. This means either we failed to annotate it (which probably means it was not being expressed in any of the >100 transcriptomes) or it is not present in the T. chumash genome. So, none of his candidates is especially compelling in the current data set.
@@ -893,3 +891,51 @@ The main region with the 3 peaks on chromosome 8 (~55 to ~63 Mbp) also contains 
 
 This brings me to two next steps (with gene expression stuff maybe step 3). First, I want to look at LD across the region and outside of it. I am now wondering about some more minor SV and what to see if there are LD peaks/blocks coinciding with the three peaks. Second, I want to try the polygenic model with only chromosome 8 and see if this alters the SNPs we pick up and the PVE. I want to get a feel for how much to trust them specifically vs the more general three peaks of association. I am also starting to wonder if the causally locus is not a gene at all but rather perhaps some sort of non-coding RNA that regulates something else or something more complicated like that.
 
+# PCA cluster, putative SV, LD and fitness
+
+I finally decided to look for PCA clusters on chromosome 8. We have something that looks like probable SV and that is somewhat associated with color. See ()[]. This led to lots of playing round (need to fill in some details here).
+
+Most important, I looked at the effect of LD on fitness on MM and A/C for the 2019 study population (HFS). This is documented in [Predict.R](Predict.R). I first predicted color (RG and GB) from the gemma results (observed). I then altered LD among top PIP (15 SNPs with PIP > .1 for either color trait) in one of two ways. First, to get minimum LD among these SNPs, I sampled genotypes for individuals independnetly at the 15 loci assuming HWE and LE (that is, binomial sampling based only on allele frequencies). Second, to maximize LD, I used k-means clustering to divide the individuals based on color phenotype (two groups), and then, for each locus, I maximized the allele frequency difference between clusters under the constraint of not altering the allele frequency for both together (basically maximizing genetic differentiation without changing allele frequency for the 15 SNPs). I then sampled genotypes for each locus and individual using the allele frequencies from the relevant cluster/group. Lastly, I caclulated the expected fitness of each individual under the selection gradient models (linear, quadratic and linear correlational selection) from [Nosil et al. 2020](https://www.proquest.com/docview/2473271380?pq-origsite=gscholar&fromopenview=true&sourcetype=Scholarly%20Journals). To do this, I tooks samples from the Bayesian posterior for the higher-level (alpha in the model) selection gradient parameters (as oppossed to block-level parameters). I based on my final inferences on 1000  total samples from the posterior spread over 50 different genotype sampling iterations (20 each). I then computed mean fitness for: (i) observed vs minimum LD = *ran*, (ii) maximum vs observed LD = *max*, and (iii) maximim vs minimum LD = *ext*. The key summaries from [Predict.R](Predict.R) are below. The take home is the LD does more in A/C than MM and we have more credible evidence for an actual beneficial effect of LD in A/C than MM.
+
+```r
+relf_ran_MM<-as.vector(obs_mfMM/ran_mfMM)
+relf_ran_AC<-as.vector(obs_mfAC/ran_mfAC)
+relf_max_MM<-as.vector(max_mfMM/obs_mfMM)
+relf_max_AC<-as.vector(max_mfAC/obs_mfAC)
+relf_ext_MM<-as.vector(max_mfMM/ran_mfMM)
+relf_ext_AC<-as.vector(max_mfAC/ran_mfAC)
+
+## prob > 1
+mean(relf_ran_MM > 1)
+#[1] 0.812
+mean(relf_ran_AC > 1)
+#[1] 0.942
+mean(relf_max_MM > 1)
+#[1] 0.815
+mean(relf_max_AC > 1)
+#[1] 0.945
+mean(relf_ext_MM > 1)
+#[1] 0.823
+mean(relf_ext_AC > 1)
+#[1] 0.984
+
+## median, 95ETPI and 90ETIP
+quantile(relf_ran_MM,probs=c(.5,.025,.975,.05,.95))
+#      50%      2.5%     97.5%        5%       95% 
+#1.0749412 0.9136294 1.2994537 0.9393364 1.2558112 
+quantile(relf_ran_AC,probs=c(.5,.025,.975,.05,.95))
+#      50%      2.5%     97.5%        5%       95% 
+#1.2728799 0.9445857 1.6684976 0.9908804 1.5890200 
+quantile(relf_max_MM,probs=c(.5,.025,.975,.05,.95))
+#      50%      2.5%     97.5%        5%       95% 
+#1.0970248 0.8779211 1.3301346 0.9123359 1.2935863 
+quantile(relf_max_AC,probs=c(.5,.025,.975,.05,.95))
+#      50%      2.5%     97.5%        5%       95% 
+#1.2688999 0.9431728 1.6698536 0.9969875 1.6018711 
+quantile(relf_ext_MM,probs=c(.5,.025,.975,.05,.95))
+#      50%      2.5%     97.5%        5%       95% 
+#1.1897078 0.8087499 1.6783626 0.8716734 1.5878912 
+quantile(relf_ext_AC,probs=c(.5,.025,.975,.05,.95))
+#     50%     2.5%    97.5%       5%      95% 
+#1.595446 1.043744 2.416977 1.148429 2.274322 
+```
