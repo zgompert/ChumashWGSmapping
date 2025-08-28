@@ -939,3 +939,9 @@ quantile(relf_ext_AC,probs=c(.5,.025,.975,.05,.95))
 #     50%     2.5%    97.5%       5%      95% 
 #1.595446 1.043744 2.416977 1.148429 2.274322 
 ```
+# Timema cristinae comparative alignments
+
+We are considering adding comparative alignments of all of the phased *T. cristinae* genomes with a focus on chromosomal rearrangements on chromosome 8 associated with color and pattern as part of this project (to think about the evolution of supergenes).
+
+I need to fill in additional details, but, a few quick summaries (before I forget things):
+
