@@ -1304,3 +1304,17 @@ cd /scratch/general/nfs1/u6000989/cactus
 
 cactus jobStore_Prog /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/comp_aligns/chr8haplotypes/ch8_cactus.txt cactusTcrAll8.hal --maxCores 72
 ```
+
+# New Timema chumash genomes and comparative alignments
+
+We now have five additional pairs of phased *T. chumash* genomes. Given this, I am putting the *T. cristinae* genomes aside for the current paper/project and focusing on these. Ultimately, I am interested in basically repeating everything above with a pangenome constructed from these.
+
+All of the 5 x 2 new genomes are in `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh`. This includes the following (two haplotypes each, genome ID and individual ID are the same, all from 2024):
+
+| Genome ID | Location | Morph |
+|-----------|----------|-------|
+| 24_0159 | HF5 *Quercus* | melanic |
+| 24_0160 | HF5 *Quercus* | melanic |
+| 24_0161 | HF5 *Quercus* | blue |
+| 24_0162 | HF5 *Quercus* | blue |
+| 24_0163 | HF5 *Quercus* | green |
