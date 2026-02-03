@@ -1318,3 +1318,45 @@ All of the 5 x 2 new genomes are in `/uufs/chpc.utah.edu/common/home/gompert-gro
 | 24_0161 | HF5 *Quercus* | blue |
 | 24_0162 | HF5 *Quercus* | blue |
 | 24_0163 | HF5 *Quercus* | green |
+
+I have one file per haplotype. I first ran our standard repeat masking on each genome.
+
+```bash
+#!/bin/sh 
+#SBATCH --time=144:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=12
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --job-name=repeatm
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load repeatmasker
+
+#version 4.0.7
+cd /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/repeat_mask
+
+## run repeat masker on each genome sequence, uses library from the 2020 Science paper 
+## developed by Victor
+
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0159/Hap1Chr.fasta
+
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0159/Hap2Chr.fasta
+
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0160/Hap1Chr.fasta
+
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0160/Hap2Chr.fasta
+
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0161/Hap1Chr.fasta
+
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0161/Hap2Chr.fasta
+
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0162/Hap1Chr.fasta
+
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0162/Hap2Chr.fasta
+
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0163/Hap1Chr.fasta
+
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0163/Hap2Chr.fasta
+```
