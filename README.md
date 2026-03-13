@@ -1351,4 +1351,82 @@ RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsR
 RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0163/Hap1Chr.fasta
 RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0163/Hap2Chr.fasta
 ```
+
 Next, I conducted a series of pairwise alignments, of these genomes to each other and to other *Timema* genomes. These were all done (once again) with `cactus`. See, [runCactusChum1.sh](runCactusChum1.sh)-[runCactusChum6.sh](runCactusChum6.sh) (I did this in various batches). 
+
+
+## Complementary analyses with new genomes
+
+I want to see how robust our results are to the specific genome we used. To that end, I am re-running the core GWA and LD analyses above with two additional genomes, 24_0159h1 (a melanic *T. chumash*) and 24_0163h1 (a green *T. chumash*). Based on the dot plots, I think these capture most of the sequence diversity we see in the color-associated genomic region. I am only working with HF5 to keep this managable. 
+
+# Alignment and variant calling
+
+I first indexed the relevant genomes.
+
+```bash
+/uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 index Hap1Chr.fasta
+```
+
+I then set up the alignments, which span 454 indiviudals and 910 sequenced libraries (listed in `files`). The temporary results are being written here: `/scratch/general/nfs1/u6000989/chumash_aligns`.
+
+```bash
+#!/bin/bash
+#SBATCH --time=336:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=24
+#SBATCH --account=gompert-kp
+#SBATCH --partition=gompert-kp
+#SBATCH --qos=gompert-kp
+#SBATCH --mem=480000
+#SBATCH --job-name=bwa-mem2
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load samtools
+##Version: 1.16 (using htslib 1.16)
+
+cd /scratch/general/nfs1/u6000989/chumash_aligns
+
+perl /uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/BwaMemFork2.pl files 
+```
+Which runs:
+
+```perl
+#!/usr/bin/perl
+#
+# alignment with bwa mem 
+#
+
+
+use Parallel::ForkManager;
+my $max = 12;
+my $pm = Parallel::ForkManager->new($max);
+my $genome1 = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0159/Hap1Chr.fasta";
+my $genome2 = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0163/Hap1Chr.fasta";
+
+$files = shift(@ARGV);
+
+open(IN, $files);
+FILES:
+while(<IN>){
+	$pm->start and next FILES; ## fork
+	chomp;
+	$fq1 = $_;
+	$fq2 = $fq1;
+	$fq2 =~ s/R1\.fastq\.gz/R2.fastq.gz/ or die "failed substitution for $fq1\n";
+        $fq1 =~ m/(^[a-zA-Z0-9\-]+)_/ or die "failed to match id $fq1\n";
+	$ind = $1;
+	$fq1 =~ m/([A-Za-z0-9]+_L\d+)_R1.fastq.gz$/ or die "failed to match library for $fq1\n";
+	$lib = $1;
+	$base1 = "red_$ind"."_$lib";
+	$base2 = "green_$ind"."_$lib";
+        system "/uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 mem -t 1 -k 19 -r 1.5 -R \'\@RG\\tID:wgs-"."$ind\\tLB:wgs-"."$ind"."_$lib\\tSM:wgs-"."$ind"."\' $genome1 $fq1 $fq2 | samtools sort -@ 2 -O BAM -o $base1.bam - && samtools index -@ 2 $base1.bam\n";
+        system "/uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 mem -t 1 -k 19 -r 1.5 -R \'\@RG\\tID:wgs-"."$ind\\tLB:wgs-"."$ind"."_$lib\\tSM:wgs-"."$ind"."\' $genome2 $fq1 $fq2 | samtools sort -@ 2 -O BAM -o $base2.bam - && samtools index -@ 2 $base2.bam\n";
+
+	$pm->finish;
+}
+close(IN);
+
+
+$pm->wait_all_children;
+```
