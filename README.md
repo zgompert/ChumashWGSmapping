@@ -1389,7 +1389,7 @@ cd /scratch/general/nfs1/u6000989/chumash_aligns
 
 perl /uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/BwaMemFork2.pl files 
 ```
-Which runs:
+Which runs [BwaMemFork2.pl](BwaMemFork2.pl):
 
 ```perl
 #!/usr/bin/perl
@@ -1420,8 +1420,8 @@ while(<IN>){
 	$lib = $1;
 	$base1 = "red_$ind"."_$lib";
 	$base2 = "green_$ind"."_$lib";
-        system "/uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 mem -t 1 -k 19 -r 1.5 -R \'\@RG\\tID:wgs-"."$ind\\tLB:wgs-"."$ind"."_$lib\\tSM:wgs-"."$ind"."\' $genome1 $fq1 $fq2 | samtools sort -@ 2 -O BAM -o $base1.bam - && samtools index -@ 2 $base1.bam\n";
-        system "/uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 mem -t 1 -k 19 -r 1.5 -R \'\@RG\\tID:wgs-"."$ind\\tLB:wgs-"."$ind"."_$lib\\tSM:wgs-"."$ind"."\' $genome2 $fq1 $fq2 | samtools sort -@ 2 -O BAM -o $base2.bam - && samtools index -@ 2 $base2.bam\n";
+    system "/uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 mem -t 1 -k 19 -r 1.5 -R \'\@RG\\tID:wgs-"."$ind\\tLB:wgs-"."$ind"."_$lib\\tSM:wgs-"."$ind"."\' $genome1 $fq1 $fq2 | samtools sort -@ 2 -O BAM -o $base1.bam - && samtools index -@ 2 $base1.bam\n";
+    system "/uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 mem -t 1 -k 19 -r 1.5 -R \'\@RG\\tID:wgs-"."$ind\\tLB:wgs-"."$ind"."_$lib\\tSM:wgs-"."$ind"."\' $genome2 $fq1 $fq2 | samtools sort -@ 2 -O BAM -o $base2.bam - && samtools index -@ 2 $base2.bam\n";
 
 	$pm->finish;
 }
