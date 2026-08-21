@@ -1430,3 +1430,90 @@ close(IN);
 
 $pm->wait_all_children;
 ```
+
+## Chromosome 8 SV calling with SyRI
+
+I am using `SyRI` (version 1.8.2) to call structural variants on chromosome 8 based on the 10 phased genomes. This is really a pairwise analysis and requires a designated referene genome. I am using the same two genomes as references that I used for the re-analysis:  24_0159h1 (a melanic *T. chumash*) and 24_0163h1 (a green *T. chumash*) and aligning each to all of the others. I am doing this with and without masking. The reason for using `SyRI` is that it defines breakpoints and SV types in a pretty clear and explicit manner. See [Goel et al. 2019](https://link.springer.com/article/10.1186/s13059-019-1911-0) for a description of the method, as well as [the GitHub page](https://github.com/schneebergerlab/syri) for the software.
+
+All of this is being done in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri`; I have linked the genomes there.
+
+First I installed all of the required software:
+
+```bash
+ml miniforge3
+
+conda create -n syRI python=3.11
+conda activate syRI
+
+conda install cython numpy scipy pandas biopython psutil matplotlib
+conda install -c conda-forge python-igraph
+conda install -c bioconda pysam
+conda install -c bioconda longestrunsubsequence
+conda install -c bioconda syri
+conda install -c bioconda plotsr 
+```
+
+I then extracted chromosome 8 (which is scaffold 4 for all of them); see [getChrom8.pl](getChrom8.pl). I might need to flip some of them, but I am trying it as is first. Part of the tricky thing is that there is a big inversion in the middle of the chromsome for some, and the main SV we ware interested in is within that. So, it isn't clear how to best orientate these (i.e., to call the one big inversion vs end inversions).
+
+```bash
+perl getChrom8.pl 24_01*/Hap*Chr.fasta
+perl getChrom8.pl 24_01*/Hap*Chr.fasta.masked
+```
+Next, I ran `minimap2` (version 2.24-r1122) for the alignments, `SyRI` and `plotsr` for plotting (version 1.2.0). 
+
+```bash
+#!/bin/bash
+#SBATCH --time=96:00:00
+#SBATCH --nodes=1
+#SBATCH -n 24
+#SBATCH --mem=240G
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --qos=gompert-np
+#SBATCH --job-name=syri
+
+ml miniforge3
+ml minimap2
+source /uufs/chpc.utah.edu/sys/installdir/r8/miniforge3/25.11.0/etc/profile.d/conda.sh
+conda activate syRI
+
+cd /uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri
+#perl forkSyri.pl ch8_24_01*fasta
+perl forkSyriMask.pl ch8_24_01*fasta.masked
+```
+Which runs (similar for masked version just different names):
+
+```perl
+#!/usr/bin/perl
+#
+# syri comparative alignments
+#
+
+use Parallel::ForkManager;
+my $max = 8;
+my $pm = Parallel::ForkManager->new($max);
+
+@rgenomes = ("ch8_24_0159_hap1.fasta","ch8_24_0163_hap1.fasta");
+
+
+foreach $rg (@rgenomes){ 
+	foreach $qg (@ARGV){
+		$pm->start and next;
+		$rg =~ m/ch8_([0-9a-z_]+)/;
+		$rgid = $1;
+		$qg =~ m/ch8_([0-9a-z_]+)/;
+		$qgid = $1;
+		$out = "syri_"."$rgid"."_"."$qgid";;
+		## whole genome alignment with minimap2
+		system "minimap2 -ax asm5 --eqx $rg $qg > $out.sam\n";
+		## syri, -k keeps intermediate files, -F S is sam inpute
+		system "syri -c $out.sam -r $rg -q $qg -k -F S --nosnp\n";
+		## plot results from syri
+		system "plotsr $out"."_syri.out $rg $qg -H 8 -W 5\n";
+
+		$pm->finish;
+	}
+}
+$pm->wait_all_children;
+```
+Key command options are `-ax asm5` which species the sequence divergence and `--eqx` which specifies CIGAR output needed. For `plotsr` `-H` and `-W` specify dimensions of the plot.
