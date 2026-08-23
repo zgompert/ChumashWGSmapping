@@ -20,10 +20,14 @@ foreach $rg (@rgenomes){
 		$out = "syri_"."$rgid"."_"."$qgid"."_mask";
 		## whole genome alignment with minimap2
 		system "minimap2 -ax asm5 --eqx $rg $qg > $out.sam\n";
-		## syri, -k keeps intermediate files, -F S is sam inpute
-		system "syri -c $out.sam -r $rg -q $qg -k -F S --nosnp\n";
+		## syri, -k keeps intermediate files, -F S is sam input
+		system "syri -c $out.sam -r $rg -q $qg --prefix $out -F S --nosnp\n";
 		## plot results from syri
-		system "plotsr $out"."_syri.out $rg $qg -H 8 -W 5\n";
+		open(G,"> genomes$out") or die;
+		print G "$rg\t$rgid\n";
+		print G "$qg\t$qgid\n";
+		close(G);
+		system "plotsr --sr $out"."syri.out --genomes genomes$out -H 8 -W 5 -o $out"."_plot.pdf\n";
 
 		$pm->finish;
 	}
