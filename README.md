@@ -1355,7 +1355,7 @@ RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsR
 Next, I conducted a series of pairwise alignments, of these genomes to each other and to other *Timema* genomes. These were all done (once again) with `cactus`. See, [runCactusChum1.sh](runCactusChum1.sh)-[runCactusChum6.sh](runCactusChum6.sh) (I did this in various batches). 
 
 
-## Complementary analyses with new genomes
+## Complementary analyses with new genomes for revisions
 
 I want to see how robust our results are to the specific genome we used. To that end, I am re-running the core GWA and LD analyses above with two additional genomes, 24_0159h1 (a melanic *T. chumash*) and 24_0163h1 (a green *T. chumash*). Based on the dot plots, I think these capture most of the sequence diversity we see in the color-associated genomic region. I am only working with HF5 to keep this managable. 
 
@@ -1525,3 +1525,7 @@ My next step is to really overlap the SV calls (summarize in `R` from the *out f
 - I am not quite sure what an inverted alignment relative to an inversion looks like in `SyRI` (is it then syntenic); this is relevant for how we call the SV (I mostly want it relative to whatever the main orientation is.
 - What is the bigger Ch8 inversion doing to recombination.
 - Do I want/need to cluster SV, or is it better to think of them separately. I saw some sort of graph-based approach for SV clustering that I think is new. I want to look into this at least.
+
+## Testing the effect of LD increase/decrease
+
+My revised analyses, which use two different approaches are in: [PredictCh8_shift_green.R](PredictCh8_shift_green.R), [PredictCh8_shift_red.R](PredictCh8_shift_red.R), [PredictCh8_sort_green.R](PredictCh8_sort_green.R), and [PredictCh8_sort_red.R](PredictCh8_sort_red.R). All of these are in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gemma_rev`.
