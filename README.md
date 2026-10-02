@@ -1355,6 +1355,89 @@ RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsR
 Next, I conducted a series of pairwise alignments, of these genomes to each other and to other *Timema* genomes. These were all done (once again) with `cactus`. See, [runCactusChum1.sh](runCactusChum1.sh)-[runCactusChum6.sh](runCactusChum6.sh) (I did this in various batches). 
 
 
+## Pangome for SV visualization
+
+The main analyses focus on the comparative alignment, but I also constructed a pangenome for chromosome 8 only to visualize the complexity of chromosomal rearrangments. I did this with `cactus-minigraph` (version 3.0.1). Everything for this is currently (temporarily) in `/scratch/general/nfs1/u6000989/cactus`.
+
+I constructed the pangenome with:
+
+```bash
+#!/bin/bash 
+#SBATCH --time=72:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=24
+#SBATCH --mem=480000
+#SBATCH --account=gompert
+#SBATCH --partition=gompert-grn
+#SBATCH --qos=gompert-grn
+#SBATCH --job-name=cactus
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+
+module load cactus/3.0.1
+
+cd /scratch/general/nfs1/u6000989/cactus
+
+## all genomes, chromosome 8 only
+cactus-pangenome jtchum_gp ch8seqs.txt --outDir /scratch/general/nfs1/u6000989/cactus/ --outName tchum_gp --reference tchum_24_0163_h1 --maxCores 48 --vcf --giraffe --gfa --gbz --chrom-og --viz
+```
+
+Here, `ch8seqs.txt` (shown below, the file:// bit was added by the program) provides the names and paths to the chromosome 8 assemblies, `jtchum_gp` is a job storae and the options at the end produce a variety of outputs the could be useful.
+
+```
+tchum_24_0163_h1        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0163_hap1.fasta
+tchum_24_0159_h1        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0159_hap1.fasta
+tchum_24_0159_h2        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0159_hap2.fasta
+tchum_24_0160_h1        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0160_hap1.fasta
+tchum_24_0160_h2        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0160_hap2.fasta
+tchum_24_0161_h1        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0161_hap1.fasta
+tchum_24_0161_h2        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0161_hap2.fasta
+tchum_24_0162_h1        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0162_hap1.fasta
+tchum_24_0162_h2        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0162_hap2.fasta
+tchum_24_0163_h2        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0163_hap2.fasta
+```
+I then used `cactus-graphmap-join` to creat the doodle drawing of the genome, which is in `tchumCh8.viz/Chr8.full.draw.png`:
+
+```bash
+#!/bin/bash 
+#SBATCH --time=72:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=24
+#SBATCH --mem=480000
+#SBATCH --account=gompert
+#SBATCH --partition=gompert-grn
+#SBATCH --qos=gompert-grn
+#SBATCH --job-name=cactus
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load cactus/3.0.1
+
+cd /scratch/general/nfs1/u6000989/cactus
+cactus-graphmap-join JS --vg chrom-alignments/Chr8.vg --reference tchum_24_0163_h1 --outDir ./ --outNam tchumCh8 --draw
+```
+
+I also updated the standard tube-like visualization (viz graphs) via sorting the og file:
+
+```bash
+module load cactus/3.0.1
+module load miniforge3
+conda create -n odgi
+conda activate odgi
+mamba install -c bioconda odgi
+mamba install -c bioconda vg
+
+## sort og file for improved visualization
+cd /scratch/general/nfs1/u6000989/cactus/tchum_gp.chroms
+
+odgi sort -i Chr8.full.og  --threads 20 -P -C /scratch/general/nfs1/u6000989/odgi -o Chr8.full_sorted.og
+
+odgi viz -i Chr8.full_sorted.og -o Chr8.full_sorted.svg -x 5000 -y 2000 
+```
+
 ## Complementary analyses with new genomes for revisions
 
 I want to see how robust our results are to the specific genome we used. To that end, I am re-running the core GWA and LD analyses above with two additional genomes, 24_0159h1 (a melanic *T. chumash*) and 24_0163h1 (a green *T. chumash*). Based on the dot plots, I think these capture most of the sequence diversity we see in the color-associated genomic region. I am only working with HF5 to keep this managable. 
