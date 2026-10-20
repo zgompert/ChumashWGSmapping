@@ -5,7 +5,7 @@
 
 
 use Parallel::ForkManager;
-my $max = 20;
+my $max = 40;
 my $pm = Parallel::ForkManager->new($max);
 
 open(IDS,"pids.txt");
@@ -18,8 +18,8 @@ close(IDS);
 FILES:
 foreach $id (@IDs){
 	$pm->start and next FILES; ## fork
-        system "samtools merge -c -p -o $id.bam $id"."_*.bam\n";
-	system "samtools index -@ 2 $id.bam\n";
+        system "samtools merge -c -p -o m_green_$id.bam green_$id"."_*.bam\n";
+	system "samtools index -@ 2 m_green_$id.bam\n";
 	$pm->finish;
 }
 

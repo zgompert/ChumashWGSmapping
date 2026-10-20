@@ -5,8 +5,7 @@
 
 
 use Parallel::ForkManager;
-my $max = 24;
-#my $max = 40;
+my $max = 20;
 my $pm = Parallel::ForkManager->new($max);
 
 FILES:
@@ -16,10 +15,10 @@ foreach $bam (@ARGV){
 	$base = $1;
 	system "samtools collate -o co_$base.bam $bam\n";
 	system "samtools fixmate -m co_$base.bam fix_$base.bam\n";
-	system "samtools sort -o sort_$base.bam fix_$base.bam\n";
+	system "samtools sort -T /scratch/general/nfs1/u6000989/chumash_aligns/temp/ -o sort_$base.bam fix_$base.bam\n";
 	## using default definition of dups
 	## measure positions based on template start/end (default). = -m t
-	system "samtools markdup -T /scratch/general/nfs1/u6000989/t_chumash_wgs/Dedup/ -r sort_$base.bam dedup_$base.bam\n";
+	system "samtools markdup -T /scratch/general/nfs1/u6000989/chumash_aligns/temp/ -r sort_$base.bam dedup_$base.bam\n";
 	$pm->finish;
 }
 
