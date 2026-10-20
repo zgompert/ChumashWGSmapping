@@ -150,6 +150,7 @@ cd /scratch/general/nfs1/u6000989/cactus/tchum_gp.chroms
 odgi sort -i Chr8.full.og  --threads 20 -P -C /scratch/general/nfs1/u6000989/odgi -o Chr8.full_sorted.og
 
 odgi viz -i Chr8.full_sorted.og -o Chr8.full_sorted.svg -x 5000 -y 2000 
+```
 
 # Alignment and variant calling
 
@@ -158,8 +159,7 @@ I first indexed the relevant genomes.
 ```bash
 /uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 index Hap1Chr.fasta
 ```
-
-I then set up the alignments, which span 454 indiviudals and 910 sequenced libraries (listed in `files`). The temporary results are being written here: `/scratch/general/nfs1/u6000989/chumash_aligns`.
+I began with the alignments for HFS, this includes 454 indiviudals and 910 sequenced libraries (listed in `files`). The temporary results are being written here: `/scratch/general/nfs1/u6000989/chumash_aligns`.
 
 ```bash
 #!/bin/bash
@@ -188,7 +188,6 @@ Which runs [BwaMemFork2.pl](BwaMemFork2.pl):
 #
 # alignment with bwa mem 
 #
-
 
 use Parallel::ForkManager;
 my $max = 12;
@@ -222,6 +221,124 @@ close(IN);
 
 $pm->wait_all_children;
 ```
+After alignment, I merged the bam files for each individual with [MergeFork.pl](MergeFork.pl):
+
+```perl
+#!/usr/bin/perl
+#
+# merge alignments for each population sample with samtools version 1.16 
+#
+
+
+use Parallel::ForkManager;
+my $max = 40;
+my $pm = Parallel::ForkManager->new($max);
+
+open(IDS,"pids.txt");
+while(<IDS>){
+	chomp;
+	push(@IDs,$_);
+}
+close(IDS);
+
+FILES:
+foreach $id (@IDs){
+	$pm->start and next FILES; ## fork
+        system "samtools merge -c -p -o m_green_$id.bam green_$id"."_*.bam\n";
+	system "samtools index -@ 2 m_green_$id.bam\n";
+	$pm->finish;
+}
+
+$pm->wait_all_children;
+```
+
+Then, I used `satmools` to mark and remove PCR duplicates, see [RemoveDupsFork.pl](RemoveDupsFork.pl), this example is for the green genome assembly:
+
+```perl
+#!/usr/bin/perl
+#
+# merge alignments for each population sample with samtools version 1.16 
+# 
+
+
+use Parallel::ForkManager;
+my $max = 40;
+my $pm = Parallel::ForkManager->new($max);
+
+open(IDS,"pids.txt");
+while(<IDS>){
+	chomp;
+	push(@IDs,$_);
+}
+close(IDS);
+
+FILES:
+foreach $id (@IDs){
+	$pm->start and next FILES; ## fork
+        system "samtools merge -c -p -o m_green_$id.bam green_$id"."_*.bam\n";
+	system "samtools index -@ 2 m_green_$id.bam\n";
+	$pm->finish;
+}
+
+$pm->wait_all_children;
+
+```
+I then used `bcftools` for variant calling (the shell script includes :
+
+```bash
+#!/bin/sh
+#SBATCH --time=180:00:00
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=8
+#SBATCH --account=gompert
+#SBATCH --partition=gompert-grn
+#SBATCH --qos=gompert-grn
+#SBATCH --mem=240000
+#SBATCH --job-name=bcf_call
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+
+module load samtools/1.16
+## version 1.16
+module load bcftools/1.16
+## version 1.16
+
+cd /scratch/general/nfs1/u6000989/chumash_aligns
+
+perl BcfForkChrom.pl green greenbams /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0163/Hap1Chr.fasta greenChroms 
+perl BcfForkChrom.pl red redbams /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0159/Hap1Chr.fasta redChroms 
+```
+
+This runs::
+
+```perl
+#!/usr/bin/perl
+#
+# samtools/bcftools variant calling by LG 
+#
+
+use Parallel::ForkManager;
+my $max = 10;
+my $pm = Parallel::ForkManager->new($max);
+
+my $base = shift(@ARGV);
+my $bams = shift@ARGV);
+my $genome = shift(@ARGV);
+
+foreach $chrom (@ARGV){
+	$pm->start and next; ## fork
+	$chrom =~ /chrom([0-9\.]+)/ or die "failed here: $chrom\n";
+	$out = "o_tchum_$base"."_chrom$1";
+	system "bcftools mpileup -b $bams -d 1000 -f $genome -R $chrom -a FORMAT/DP,FORMAT/AD -q 20 -Q 30 -I -Ou | bcftools call -v -c -p 0.01 -Ov -o $out"."vcf\n";
+	$pm->finish;
+}
+
+$pm->wait_all_children;
+
+```
+
+
 
 ## Chromosome 8 SV calling with SyRI
 
