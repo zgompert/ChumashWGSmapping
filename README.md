@@ -13,9 +13,311 @@ The DNA sequence data for this project are in two places. The first two batches 
 
 The experimental data (color and survival) are in the 2019_Tchumash* files in `/uufs/chpc.utah.edu/common/home/gompert-group4/data/t_chumash_wgs/`.
 
-I am using our 2020 *T. chumash* genome assembly. This genome is described in [Nosil et al. 2020](https://www.proquest.com/docview/2473271380?pq-origsite=gscholar&fromopenview=true&sourcetype=Scholarly%20Journals). See [timema_chumash_29Feb2020_N4ago.report.pdf](https://github.com/user-attachments/files/17368853/timema_chumash_29Feb2020_N4ago.report.pdf) for a report from Dovetail. Past comparative alignments suggest general chromosome-level synteny with *T. crstinae* except that *T. cristinae* chromsomes 1, 3, 4 and 9 appear to be fused in *T. chumash*. Patrik suggested this is consistent with cytology (add source). Also note (from the report) that the genome size is notably larger than our other *Timema* genomes (2.4 Gbps) and the final assembly has a non-trivial number of duplicated BUSCOs (29). This could reflect some difficulities in the assembly (especially if the two genome copies differed enough) that might be cleaned up with phased genomes later. However, chromosome 8 appears to be largely syntenic (though not colinear) between *T. cristinae* and *T. chumash* and is the main focus of our interest ([see the TimemaFusion repository for past work on this](https://github.com/zgompert/TimemaFusion)).
-
 We have color data for the 2019 and 2015 (GR806) samples; we have survival data for 2019 only (see [2019_Tchumash_transplant_phenotype.csv](2019_Tchumash_transplant_phenotype.csv), [2019_Tchumash_transplant_table.csv](2019_Tchumash_transplant_table.csv) and [2015_Tchumash_color.csv](2015_Tchumash_color.csv)). I had the 2019 trait data on the cluster and obtained the 2015 data from Dryad. Both are now also in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gemma`.
+
+My initial analyses were based on an older genome: This genome is described in [Nosil et al. 2020](https://www.proquest.com/docview/2473271380?pq-origsite=gscholar&fromopenview=true&sourcetype=Scholarly%20Journals). See [timema_chumash_29Feb2020_N4ago.report.pdf](https://github.com/user-attachments/files/17368853/timema_chumash_29Feb2020_N4ago.report.pdf) for a report from Dovetail. Past comparative alignments suggest general chromosome-level synteny with *T. crstinae* except that *T. cristinae* chromsomes 1, 3, 4 and 9 appear to be fused in *T. chumash*. Patrik suggested this is consistent with cytology (add source). Also note (from the report) that the genome size is notably larger than our other *Timema* genomes (2.4 Gbps) and the final assembly has a non-trivial number of duplicated BUSCOs (29). This could reflect some difficulities in the assembly (especially if the two genome copies differed enough) that might be cleaned up with phased genomes later. However, chromosome 8 appears to be largely syntenic (though not colinear) between *T. cristinae* and *T. chumash* and is the main focus of our interest ([see the TimemaFusion repository for past work on this](https://github.com/zgompert/TimemaFusion)).
+
+I have since redone everything using a set of 10 phased genome assemblies (with most analyses using two of these as references). For the core GWA and LD analyses above with two additional genomes, 24_0159h1 (a melanic *T. chumash*) and 24_0163h1 (a green *T. chumash*). Based on the dot plots, I think these capture most of the sequence diversity we see in the color-associated genomic region.My results with the new genomes follow, but I have retained much of the original results at the end to maintain the record of them. 
+
+# New Timema chumash genomes and comparative alignments
+
+We now have five additional pairs of phased *T. chumash* genomes. Given this, I am putting the *T. cristinae* genomes aside for the current paper/project and focusing on these. Ultimately, I am interested in basically repeating everything above with a pangenome constructed from these.
+
+All of the 5 x 2 new genomes are in `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh`. This includes the following (two haplotypes each, genome ID and individual ID are the same, all from 2024):
+
+| Genome ID | Location | Morph |
+|-----------|----------|-------|
+| 24_0159 | HF5 *Quercus* | melanic |
+| 24_0160 | HF5 *Quercus* | melanic |
+| 24_0161 | HF5 *Quercus* | blue |
+| 24_0162 | HF5 *Quercus* | blue |
+| 24_0163 | HF5 *Quercus* | green |
+
+I have one file per haplotype. I first ran our standard repeat masking on each genome.
+
+```bash
+#!/bin/sh 
+#SBATCH --time=144:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=12
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --job-name=repeatm
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load repeatmasker
+
+#version 4.0.7
+cd /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/repeat_mask
+
+## run repeat masker on each genome sequence, uses library from the 2020 Science paper 
+## developed by Victor
+
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0159/Hap1Chr.fasta
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0159/Hap2Chr.fasta
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0160/Hap1Chr.fasta
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0160/Hap2Chr.fasta
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0161/Hap1Chr.fasta
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0161/Hap2Chr.fasta
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0162/Hap1Chr.fasta
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0162/Hap2Chr.fasta
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0163/Hap1Chr.fasta
+RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0163/Hap2Chr.fasta
+```
+
+Next, I conducted a series of pairwise alignments, of these genomes to each other and to other *Timema* genomes. These were all done (once again) with `cactus`. See, [runCactusChum1.sh](runCactusChum1.sh)-[runCactusChum6.sh](runCactusChum6.sh) (I did this in various batches). 
+
+
+## Pangome for SV visualization
+
+The main analyses focus on the comparative alignment, but I also constructed a pangenome for chromosome 8 only to visualize the complexity of chromosomal rearrangments. I did this with `cactus-minigraph` (version 3.0.1). Everything for this is currently (temporarily) in `/scratch/general/nfs1/u6000989/cactus`.
+
+I constructed the pangenome with:
+
+```bash
+#!/bin/bash 
+#SBATCH --time=72:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=24
+#SBATCH --mem=480000
+#SBATCH --account=gompert
+#SBATCH --partition=gompert-grn
+#SBATCH --qos=gompert-grn
+#SBATCH --job-name=cactus
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+
+module load cactus/3.0.1
+
+cd /scratch/general/nfs1/u6000989/cactus
+
+## all genomes, chromosome 8 only
+cactus-pangenome jtchum_gp ch8seqs.txt --outDir /scratch/general/nfs1/u6000989/cactus/ --outName tchum_gp --reference tchum_24_0163_h1 --maxCores 48 --vcf --giraffe --gfa --gbz --chrom-og --viz
+```
+
+Here, `ch8seqs.txt` (shown below, the file:// bit was added by the program) provides the names and paths to the chromosome 8 assemblies, `jtchum_gp` is a job storae and the options at the end produce a variety of outputs the could be useful.
+
+```
+tchum_24_0163_h1        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0163_hap1.fasta
+tchum_24_0159_h1        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0159_hap1.fasta
+tchum_24_0159_h2        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0159_hap2.fasta
+tchum_24_0160_h1        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0160_hap1.fasta
+tchum_24_0160_h2        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0160_hap2.fasta
+tchum_24_0161_h1        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0161_hap1.fasta
+tchum_24_0161_h2        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0161_hap2.fasta
+tchum_24_0162_h1        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0162_hap1.fasta
+tchum_24_0162_h2        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0162_hap2.fasta
+tchum_24_0163_h2        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0163_hap2.fasta
+```
+I then used `cactus-graphmap-join` to creat the doodle drawing of the genome, which is in `tchumCh8.viz/Chr8.full.draw.png`:
+
+```bash
+#!/bin/bash 
+#SBATCH --time=72:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=24
+#SBATCH --mem=480000
+#SBATCH --account=gompert
+#SBATCH --partition=gompert-grn
+#SBATCH --qos=gompert-grn
+#SBATCH --job-name=cactus
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load cactus/3.0.1
+
+cd /scratch/general/nfs1/u6000989/cactus
+cactus-graphmap-join JS --vg chrom-alignments/Chr8.vg --reference tchum_24_0163_h1 --outDir ./ --outNam tchumCh8 --draw
+```
+
+I also updated the standard tube-like visualization (viz graphs) via sorting the og file:
+
+```bash
+module load cactus/3.0.1
+module load miniforge3
+conda create -n odgi
+conda activate odgi
+mamba install -c bioconda odgi
+mamba install -c bioconda vg
+
+## sort og file for improved visualization
+cd /scratch/general/nfs1/u6000989/cactus/tchum_gp.chroms
+
+odgi sort -i Chr8.full.og  --threads 20 -P -C /scratch/general/nfs1/u6000989/odgi -o Chr8.full_sorted.og
+
+odgi viz -i Chr8.full_sorted.og -o Chr8.full_sorted.svg -x 5000 -y 2000 
+
+# Alignment and variant calling
+
+I first indexed the relevant genomes.
+
+```bash
+/uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 index Hap1Chr.fasta
+```
+
+I then set up the alignments, which span 454 indiviudals and 910 sequenced libraries (listed in `files`). The temporary results are being written here: `/scratch/general/nfs1/u6000989/chumash_aligns`.
+
+```bash
+#!/bin/bash
+#SBATCH --time=336:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=24
+#SBATCH --account=gompert-kp
+#SBATCH --partition=gompert-kp
+#SBATCH --qos=gompert-kp
+#SBATCH --mem=480000
+#SBATCH --job-name=bwa-mem2
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load samtools
+##Version: 1.16 (using htslib 1.16)
+
+cd /scratch/general/nfs1/u6000989/chumash_aligns
+
+perl /uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/BwaMemFork2.pl files 
+```
+Which runs [BwaMemFork2.pl](BwaMemFork2.pl):
+
+```perl
+#!/usr/bin/perl
+#
+# alignment with bwa mem 
+#
+
+
+use Parallel::ForkManager;
+my $max = 12;
+my $pm = Parallel::ForkManager->new($max);
+my $genome1 = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0159/Hap1Chr.fasta";
+my $genome2 = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0163/Hap1Chr.fasta";
+
+$files = shift(@ARGV);
+
+open(IN, $files);
+FILES:
+while(<IN>){
+	$pm->start and next FILES; ## fork
+	chomp;
+	$fq1 = $_;
+	$fq2 = $fq1;
+	$fq2 =~ s/R1\.fastq\.gz/R2.fastq.gz/ or die "failed substitution for $fq1\n";
+        $fq1 =~ m/(^[a-zA-Z0-9\-]+)_/ or die "failed to match id $fq1\n";
+	$ind = $1;
+	$fq1 =~ m/([A-Za-z0-9]+_L\d+)_R1.fastq.gz$/ or die "failed to match library for $fq1\n";
+	$lib = $1;
+	$base1 = "red_$ind"."_$lib";
+	$base2 = "green_$ind"."_$lib";
+    system "/uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 mem -t 1 -k 19 -r 1.5 -R \'\@RG\\tID:wgs-"."$ind\\tLB:wgs-"."$ind"."_$lib\\tSM:wgs-"."$ind"."\' $genome1 $fq1 $fq2 | samtools sort -@ 2 -O BAM -o $base1.bam - && samtools index -@ 2 $base1.bam\n";
+    system "/uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 mem -t 1 -k 19 -r 1.5 -R \'\@RG\\tID:wgs-"."$ind\\tLB:wgs-"."$ind"."_$lib\\tSM:wgs-"."$ind"."\' $genome2 $fq1 $fq2 | samtools sort -@ 2 -O BAM -o $base2.bam - && samtools index -@ 2 $base2.bam\n";
+
+	$pm->finish;
+}
+close(IN);
+
+
+$pm->wait_all_children;
+```
+
+## Chromosome 8 SV calling with SyRI
+
+I am using `SyRI` (version 1.8.2) to call structural variants on chromosome 8 based on the 10 phased genomes. This is really a pairwise analysis and requires a designated referene genome. I am using the same two genomes as references that I used for the re-analysis:  24_0159h1 (a melanic *T. chumash*) and 24_0163h1 (a green *T. chumash*) and aligning each to all of the others. I am doing this with and without masking. The reason for using `SyRI` is that it defines breakpoints and SV types in a pretty clear and explicit manner. See [Goel et al. 2019](https://link.springer.com/article/10.1186/s13059-019-1911-0) for a description of the method, as well as [the GitHub page](https://github.com/schneebergerlab/syri) for the software.
+
+All of this is being done in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri`; I have linked the genomes there.
+
+First I installed all of the required software:
+
+```bash
+ml miniforge3
+
+conda create -n syRI python=3.11
+conda activate syRI
+
+conda install cython numpy scipy pandas biopython psutil matplotlib
+conda install -c conda-forge python-igraph
+conda install -c bioconda pysam
+conda install -c bioconda longestrunsubsequence
+conda install -c bioconda syri
+conda install -c bioconda plotsr 
+```
+
+I then extracted chromosome 8 (which is scaffold 4 for all of them); see [getChrom8.pl](getChrom8.pl). I might need to flip some of them, but I am trying it as is first. Part of the tricky thing is that there is a big inversion in the middle of the chromsome for some, and the main SV we ware interested in is within that. So, it isn't clear how to best orientate these (i.e., to call the one big inversion vs end inversions).
+
+```bash
+perl getChrom8.pl 24_01*/Hap*Chr.fasta
+perl getChrom8.pl 24_01*/Hap*Chr.fasta.masked
+```
+Next, I ran `minimap2` (version 2.24-r1122) for the alignments, `SyRI` and `plotsr` for plotting (version 1.2.0). 
+
+```bash
+#!/bin/bash
+#SBATCH --time=96:00:00
+#SBATCH --nodes=1
+#SBATCH -n 24
+#SBATCH --mem=240G
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --qos=gompert-np
+#SBATCH --job-name=syri
+
+ml miniforge3
+ml minimap2
+source /uufs/chpc.utah.edu/sys/installdir/r8/miniforge3/25.11.0/etc/profile.d/conda.sh
+conda activate syRI
+
+cd /uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri
+#perl forkSyri.pl ch8_24_01*fasta
+perl forkSyriMask.pl ch8_24_01*fasta.masked
+```
+Which runs (similar for masked version just different names):
+
+```perl
+#!/usr/bin/perl
+#
+# syri comparative alignments
+#
+
+use Parallel::ForkManager;
+my $max = 8;
+my $pm = Parallel::ForkManager->new($max);
+
+@rgenomes = ("ch8_24_0159_hap1.fasta","ch8_24_0163_hap1.fasta");
+
+
+foreach $rg (@rgenomes){ 
+	foreach $qg (@ARGV){
+		$pm->start and next;
+		$rg =~ m/ch8_([0-9a-z_]+)/;
+		$rgid = $1;
+		$qg =~ m/ch8_([0-9a-z_]+)/;
+		$qgid = $1;
+		$out = "syri_"."$rgid"."_"."$qgid";;
+		## whole genome alignment with minimap2
+		system "minimap2 -ax asm5 --eqx $rg $qg > $out.sam\n";
+		## syri, -k keeps intermediate files, -F S is sam inpute
+		system "syri -c $out.sam -r $rg -q $qg -k -F S --nosnp\n";
+		## plot results from syri
+		system "plotsr $out"."_syri.out $rg $qg -H 8 -W 5\n";
+
+		$pm->finish;
+	}
+}
+$pm->wait_all_children;
+```
+Key command options are `-ax asm5` which species the sequence divergence and `--eqx` which specifies CIGAR output needed. For `plotsr` `-H` and `-W` specify dimensions of the plot.
+
+The main tabular SV output from `SyRI` are the *out files. The format is described [here](https://schneebergerlab.github.io/syri/fileformat.html). This includes information on SVs and alignments within SVs. HDRs are highly divergent regions that did not align. These could be interesting and can be output (in terms of sequence) by `SyRI` with a command line option. The plots from `plotsr` are in the same result directory. A few notes on these: (i) the bigger Ch8 inversion seems to obscure other SV when present, (ii) the focal color region from the GWA (about 60-65 Mbps for the two reference genomes) contains multiple called SV, including a good sized inversion and what I think are smaller duplications and translocations from elewhere on Ch8 (clearly relevant for ideas about aggregation of loci in supergenes), and (iii) the region contains a number of HDRs. 
+
+My next step is to really overlap the SV calls (summarize in `R` from the *out files) and overlay them on the GWA plots to see how these signals really line up. A few notes additional notes for next time
+
+- I am not quite sure what an inverted alignment relative to an inversion looks like in `SyRI` (is it then syntenic); this is relevant for how we call the SV (I mostly want it relative to whatever the main orientation is.
+- What is the bigger Ch8 inversion doing to recombination.
+- Do I want/need to cluster SV, or is it better to think of them separately. I saw some sort of graph-based approach for SV clustering that I think is new. I want to look into this at least.
+
 
 # DNA sequence alignment
 
@@ -1305,309 +1607,9 @@ cd /scratch/general/nfs1/u6000989/cactus
 cactus jobStore_Prog /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/comp_aligns/chr8haplotypes/ch8_cactus.txt cactusTcrAll8.hal --maxCores 72
 ```
 
-# New Timema chumash genomes and comparative alignments
-
-We now have five additional pairs of phased *T. chumash* genomes. Given this, I am putting the *T. cristinae* genomes aside for the current paper/project and focusing on these. Ultimately, I am interested in basically repeating everything above with a pangenome constructed from these.
-
-All of the 5 x 2 new genomes are in `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh`. This includes the following (two haplotypes each, genome ID and individual ID are the same, all from 2024):
-
-| Genome ID | Location | Morph |
-|-----------|----------|-------|
-| 24_0159 | HF5 *Quercus* | melanic |
-| 24_0160 | HF5 *Quercus* | melanic |
-| 24_0161 | HF5 *Quercus* | blue |
-| 24_0162 | HF5 *Quercus* | blue |
-| 24_0163 | HF5 *Quercus* | green |
-
-I have one file per haplotype. I first ran our standard repeat masking on each genome.
-
-```bash
-#!/bin/sh 
-#SBATCH --time=144:00:00
-#SBATCH --nodes=1
-#SBATCH --ntasks=12
-#SBATCH --account=gompert-np
-#SBATCH --partition=gompert-np
-#SBATCH --job-name=repeatm
-#SBATCH --mail-type=FAIL
-#SBATCH --mail-user=zach.gompert@usu.edu
-
-module load repeatmasker
-
-#version 4.0.7
-cd /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/repeat_mask
-
-## run repeat masker on each genome sequence, uses library from the 2020 Science paper 
-## developed by Victor
-
-RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0159/Hap1Chr.fasta
-RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0159/Hap2Chr.fasta
-RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0160/Hap1Chr.fasta
-RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0160/Hap2Chr.fasta
-RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0161/Hap1Chr.fasta
-RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0161/Hap2Chr.fasta
-RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0162/Hap1Chr.fasta
-RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0162/Hap2Chr.fasta
-RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0163/Hap1Chr.fasta
-RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsRM.lib /uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0163/Hap2Chr.fasta
-```
-
-Next, I conducted a series of pairwise alignments, of these genomes to each other and to other *Timema* genomes. These were all done (once again) with `cactus`. See, [runCactusChum1.sh](runCactusChum1.sh)-[runCactusChum6.sh](runCactusChum6.sh) (I did this in various batches). 
-
-
-## Pangome for SV visualization
-
-The main analyses focus on the comparative alignment, but I also constructed a pangenome for chromosome 8 only to visualize the complexity of chromosomal rearrangments. I did this with `cactus-minigraph` (version 3.0.1). Everything for this is currently (temporarily) in `/scratch/general/nfs1/u6000989/cactus`.
-
-I constructed the pangenome with:
-
-```bash
-#!/bin/bash 
-#SBATCH --time=72:00:00
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=24
-#SBATCH --mem=480000
-#SBATCH --account=gompert
-#SBATCH --partition=gompert-grn
-#SBATCH --qos=gompert-grn
-#SBATCH --job-name=cactus
-#SBATCH --mail-type=FAIL
-#SBATCH --mail-user=zach.gompert@usu.edu
-
-
-module load cactus/3.0.1
-
-cd /scratch/general/nfs1/u6000989/cactus
-
-## all genomes, chromosome 8 only
-cactus-pangenome jtchum_gp ch8seqs.txt --outDir /scratch/general/nfs1/u6000989/cactus/ --outName tchum_gp --reference tchum_24_0163_h1 --maxCores 48 --vcf --giraffe --gfa --gbz --chrom-og --viz
-```
-
-Here, `ch8seqs.txt` (shown below, the file:// bit was added by the program) provides the names and paths to the chromosome 8 assemblies, `jtchum_gp` is a job storae and the options at the end produce a variety of outputs the could be useful.
 
 ```
-tchum_24_0163_h1        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0163_hap1.fasta
-tchum_24_0159_h1        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0159_hap1.fasta
-tchum_24_0159_h2        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0159_hap2.fasta
-tchum_24_0160_h1        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0160_hap1.fasta
-tchum_24_0160_h2        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0160_hap2.fasta
-tchum_24_0161_h1        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0161_hap1.fasta
-tchum_24_0161_h2        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0161_hap2.fasta
-tchum_24_0162_h1        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0162_hap1.fasta
-tchum_24_0162_h2        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0162_hap2.fasta
-tchum_24_0163_h2        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0163_hap2.fasta
-```
-I then used `cactus-graphmap-join` to creat the doodle drawing of the genome, which is in `tchumCh8.viz/Chr8.full.draw.png`:
 
-```bash
-#!/bin/bash 
-#SBATCH --time=72:00:00
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=24
-#SBATCH --mem=480000
-#SBATCH --account=gompert
-#SBATCH --partition=gompert-grn
-#SBATCH --qos=gompert-grn
-#SBATCH --job-name=cactus
-#SBATCH --mail-type=FAIL
-#SBATCH --mail-user=zach.gompert@usu.edu
-
-module load cactus/3.0.1
-
-cd /scratch/general/nfs1/u6000989/cactus
-cactus-graphmap-join JS --vg chrom-alignments/Chr8.vg --reference tchum_24_0163_h1 --outDir ./ --outNam tchumCh8 --draw
-```
-
-I also updated the standard tube-like visualization (viz graphs) via sorting the og file:
-
-```bash
-module load cactus/3.0.1
-module load miniforge3
-conda create -n odgi
-conda activate odgi
-mamba install -c bioconda odgi
-mamba install -c bioconda vg
-
-## sort og file for improved visualization
-cd /scratch/general/nfs1/u6000989/cactus/tchum_gp.chroms
-
-odgi sort -i Chr8.full.og  --threads 20 -P -C /scratch/general/nfs1/u6000989/odgi -o Chr8.full_sorted.og
-
-odgi viz -i Chr8.full_sorted.og -o Chr8.full_sorted.svg -x 5000 -y 2000 
-```
-
-## Complementary analyses with new genomes for revisions
-
-I want to see how robust our results are to the specific genome we used. To that end, I am re-running the core GWA and LD analyses above with two additional genomes, 24_0159h1 (a melanic *T. chumash*) and 24_0163h1 (a green *T. chumash*). Based on the dot plots, I think these capture most of the sequence diversity we see in the color-associated genomic region. I am only working with HF5 to keep this managable. 
-
-# Alignment and variant calling
-
-I first indexed the relevant genomes.
-
-```bash
-/uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 index Hap1Chr.fasta
-```
-
-I then set up the alignments, which span 454 indiviudals and 910 sequenced libraries (listed in `files`). The temporary results are being written here: `/scratch/general/nfs1/u6000989/chumash_aligns`.
-
-```bash
-#!/bin/bash
-#SBATCH --time=336:00:00
-#SBATCH --nodes=1
-#SBATCH --ntasks=24
-#SBATCH --account=gompert-kp
-#SBATCH --partition=gompert-kp
-#SBATCH --qos=gompert-kp
-#SBATCH --mem=480000
-#SBATCH --job-name=bwa-mem2
-#SBATCH --mail-type=FAIL
-#SBATCH --mail-user=zach.gompert@usu.edu
-
-module load samtools
-##Version: 1.16 (using htslib 1.16)
-
-cd /scratch/general/nfs1/u6000989/chumash_aligns
-
-perl /uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/BwaMemFork2.pl files 
-```
-Which runs [BwaMemFork2.pl](BwaMemFork2.pl):
-
-```perl
-#!/usr/bin/perl
-#
-# alignment with bwa mem 
-#
-
-
-use Parallel::ForkManager;
-my $max = 12;
-my $pm = Parallel::ForkManager->new($max);
-my $genome1 = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0159/Hap1Chr.fasta";
-my $genome2 = "/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/edingburgh/24_0163/Hap1Chr.fasta";
-
-$files = shift(@ARGV);
-
-open(IN, $files);
-FILES:
-while(<IN>){
-	$pm->start and next FILES; ## fork
-	chomp;
-	$fq1 = $_;
-	$fq2 = $fq1;
-	$fq2 =~ s/R1\.fastq\.gz/R2.fastq.gz/ or die "failed substitution for $fq1\n";
-        $fq1 =~ m/(^[a-zA-Z0-9\-]+)_/ or die "failed to match id $fq1\n";
-	$ind = $1;
-	$fq1 =~ m/([A-Za-z0-9]+_L\d+)_R1.fastq.gz$/ or die "failed to match library for $fq1\n";
-	$lib = $1;
-	$base1 = "red_$ind"."_$lib";
-	$base2 = "green_$ind"."_$lib";
-    system "/uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 mem -t 1 -k 19 -r 1.5 -R \'\@RG\\tID:wgs-"."$ind\\tLB:wgs-"."$ind"."_$lib\\tSM:wgs-"."$ind"."\' $genome1 $fq1 $fq2 | samtools sort -@ 2 -O BAM -o $base1.bam - && samtools index -@ 2 $base1.bam\n";
-    system "/uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 mem -t 1 -k 19 -r 1.5 -R \'\@RG\\tID:wgs-"."$ind\\tLB:wgs-"."$ind"."_$lib\\tSM:wgs-"."$ind"."\' $genome2 $fq1 $fq2 | samtools sort -@ 2 -O BAM -o $base2.bam - && samtools index -@ 2 $base2.bam\n";
-
-	$pm->finish;
-}
-close(IN);
-
-
-$pm->wait_all_children;
-```
-
-## Chromosome 8 SV calling with SyRI
-
-I am using `SyRI` (version 1.8.2) to call structural variants on chromosome 8 based on the 10 phased genomes. This is really a pairwise analysis and requires a designated referene genome. I am using the same two genomes as references that I used for the re-analysis:  24_0159h1 (a melanic *T. chumash*) and 24_0163h1 (a green *T. chumash*) and aligning each to all of the others. I am doing this with and without masking. The reason for using `SyRI` is that it defines breakpoints and SV types in a pretty clear and explicit manner. See [Goel et al. 2019](https://link.springer.com/article/10.1186/s13059-019-1911-0) for a description of the method, as well as [the GitHub page](https://github.com/schneebergerlab/syri) for the software.
-
-All of this is being done in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri`; I have linked the genomes there.
-
-First I installed all of the required software:
-
-```bash
-ml miniforge3
-
-conda create -n syRI python=3.11
-conda activate syRI
-
-conda install cython numpy scipy pandas biopython psutil matplotlib
-conda install -c conda-forge python-igraph
-conda install -c bioconda pysam
-conda install -c bioconda longestrunsubsequence
-conda install -c bioconda syri
-conda install -c bioconda plotsr 
-```
-
-I then extracted chromosome 8 (which is scaffold 4 for all of them); see [getChrom8.pl](getChrom8.pl). I might need to flip some of them, but I am trying it as is first. Part of the tricky thing is that there is a big inversion in the middle of the chromsome for some, and the main SV we ware interested in is within that. So, it isn't clear how to best orientate these (i.e., to call the one big inversion vs end inversions).
-
-```bash
-perl getChrom8.pl 24_01*/Hap*Chr.fasta
-perl getChrom8.pl 24_01*/Hap*Chr.fasta.masked
-```
-Next, I ran `minimap2` (version 2.24-r1122) for the alignments, `SyRI` and `plotsr` for plotting (version 1.2.0). 
-
-```bash
-#!/bin/bash
-#SBATCH --time=96:00:00
-#SBATCH --nodes=1
-#SBATCH -n 24
-#SBATCH --mem=240G
-#SBATCH --account=gompert-np
-#SBATCH --partition=gompert-np
-#SBATCH --qos=gompert-np
-#SBATCH --job-name=syri
-
-ml miniforge3
-ml minimap2
-source /uufs/chpc.utah.edu/sys/installdir/r8/miniforge3/25.11.0/etc/profile.d/conda.sh
-conda activate syRI
-
-cd /uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri
-#perl forkSyri.pl ch8_24_01*fasta
-perl forkSyriMask.pl ch8_24_01*fasta.masked
-```
-Which runs (similar for masked version just different names):
-
-```perl
-#!/usr/bin/perl
-#
-# syri comparative alignments
-#
-
-use Parallel::ForkManager;
-my $max = 8;
-my $pm = Parallel::ForkManager->new($max);
-
-@rgenomes = ("ch8_24_0159_hap1.fasta","ch8_24_0163_hap1.fasta");
-
-
-foreach $rg (@rgenomes){ 
-	foreach $qg (@ARGV){
-		$pm->start and next;
-		$rg =~ m/ch8_([0-9a-z_]+)/;
-		$rgid = $1;
-		$qg =~ m/ch8_([0-9a-z_]+)/;
-		$qgid = $1;
-		$out = "syri_"."$rgid"."_"."$qgid";;
-		## whole genome alignment with minimap2
-		system "minimap2 -ax asm5 --eqx $rg $qg > $out.sam\n";
-		## syri, -k keeps intermediate files, -F S is sam inpute
-		system "syri -c $out.sam -r $rg -q $qg -k -F S --nosnp\n";
-		## plot results from syri
-		system "plotsr $out"."_syri.out $rg $qg -H 8 -W 5\n";
-
-		$pm->finish;
-	}
-}
-$pm->wait_all_children;
-```
-Key command options are `-ax asm5` which species the sequence divergence and `--eqx` which specifies CIGAR output needed. For `plotsr` `-H` and `-W` specify dimensions of the plot.
-
-The main tabular SV output from `SyRI` are the *out files. The format is described [here](https://schneebergerlab.github.io/syri/fileformat.html). This includes information on SVs and alignments within SVs. HDRs are highly divergent regions that did not align. These could be interesting and can be output (in terms of sequence) by `SyRI` with a command line option. The plots from `plotsr` are in the same result directory. A few notes on these: (i) the bigger Ch8 inversion seems to obscure other SV when present, (ii) the focal color region from the GWA (about 60-65 Mbps for the two reference genomes) contains multiple called SV, including a good sized inversion and what I think are smaller duplications and translocations from elewhere on Ch8 (clearly relevant for ideas about aggregation of loci in supergenes), and (iii) the region contains a number of HDRs. 
-
-My next step is to really overlap the SV calls (summarize in `R` from the *out files) and overlay them on the GWA plots to see how these signals really line up. A few notes additional notes for next time
-
-- I am not quite sure what an inverted alignment relative to an inversion looks like in `SyRI` (is it then syntenic); this is relevant for how we call the SV (I mostly want it relative to whatever the main orientation is.
-- What is the bigger Ch8 inversion doing to recombination.
-- Do I want/need to cluster SV, or is it better to think of them separately. I saw some sort of graph-based approach for SV clustering that I think is new. I want to look into this at least.
 
 ## Testing the effect of LD increase/decrease
 
