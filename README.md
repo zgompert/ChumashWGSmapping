@@ -793,42 +793,33 @@ gemma -g  $gfile -p $pfile -gk 1 -o $of -maf 0
 gemma -g  $gfile -p $pfile -k output/$of.cXX.txt -lmm 4 -n 2 -o $of -maf 0
 ```
 
-These initial analyses were summarized and examined with [Gwa_green.R](Gwa_green.R) and [Gwa_red.R](Gwa_red.R).
+These analyses were summarized and examined with [Gwa_green.R](Gwa_green.R) and [Gwa_red.R](Gwa_red.R).
 
-Next, I ran the BSLMM with the subset version. I ran 60 chains total.
+Next, I ran the BSLMM as well. I did this at different scales: whole genome, chromosome 8, and the color-associated region of chromosome 8 (more on that below).
 
 ```bash
 #!/bin/bash
-#SBATCH --time=240:00:00
+#SBATCH --time=96:00:00
 #SBATCH --nodes=1
-#SBATCH --ntasks=12
-#SBATCH --account=wolf-kp
-#SBATCH --partition=wolf-kp
+#SBATCH --ntasks=16
+#SBATCH --mem=240G
+#SBATCH --account=gompert
+#SBATCH --qos=gompert-grn
+#SBATCH --partition=gompert-grn
 #SBATCH --job-name=gemma
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=zach.gompert@usu.edu
 
 module load gemma
 # 0.95a
+cd /uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gemma_rev
 
-cd /uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gemma
-
-## RG 
-gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_poly_RG -maf 0
-gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_poly_RG.cXX.txt -lmm 4 -n 1 -o o_poly_RG -maf 0
-
-## GB 
-gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_poly_GB -maf 0
-gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_poly_GB.cXX.txt -lmm 4 -n 2 -o o_poly_GB -maf 0
-
-## Surv 
-gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_poly_SURV -maf 0
-gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_poly_SURV.cXX.txt -lmm 4 -n 3 -o o_poly_SURV -maf 0
-
-## now polygenic BSLMM
+perl forkRunGemmaFocal.pl
+perl forkRunGemmaCh8.pl
 perl forkRunGemma.pl
 ```
-The perl script is:
+See [forkRunGemmaFocal.pl](forkRunGemmaFocal.pl), [forkRunGemmaCh8.pl](forkRunGemmaCh8.pl), and [forkRunGemma.pl](forkRunGemma.pl) for MCMC details; also the last one is pasted below for reference:
+
 ```perl
 #!/usr/bin/perl
 #
@@ -836,22 +827,37 @@ The perl script is:
 #
 
 use Parallel::ForkManager;
-my $max = 40;
+my $max = 4;
 my $pm = Parallel::ForkManager->new($max);
 
-$g = "hsub_mlpntest_EXP_tchum.geno";
-$p = "ph_tchum2019.txt";
+$gfile1="hsub_mlpntest_tchum_red.geno";
+$pfile1="ph_tchum_red.txt";
+$gfile2="hsub_mlpntest_tchum_green.geno";
+$pfile2="ph_tchum_green.txt";
 
 
-foreach $ph (1..2){ 
-	foreach $ch (0..59){
+foreach $ph (2){ 
+	foreach $ph (1..2){ 
+		foreach $ch (0..59){
 		sleep 2;
 		$pm->start and next;
-		$o = "o_poly_bslmm_ph$ph"."_ch$ch";
+		## red genome
+		$o = "o_poly_bslmm_red_ph$ph"."_ch$ch";
 		if($ph == 1){
-	    		system "gemma -g $g -p $p -bslmm 1 -n $ph -o $o -maf 0 -w 200000 -s 1000000 -k output/o_poly_RG.cXX.txt\n";
+	    		print "gemma -g $gfile1 -p $pfile1 -bslmm 1 -n $ph -o $o -maf 0.01 -w 200000 -s 1000000 -k output/o_red_RG.cXX.txt\n";
+	    		system "gemma -g $gfile1 -p $pfile1 -bslmm 1 -n $ph -o $o -maf 0.01 -w 200000 -s 1000000 -k output/o_red_RG.cXX.txt\n";
 		} elsif($ph == 2){
-	    		system "gemma -g $g -p $p -bslmm 1 -n $ph -o $o -maf 0 -w 200000 -s 1000000 -k output/o_poly_GB.cXX.txt\n";
+	    		print "gemma -g $gfile1 -p $pfile1 -bslmm 1 -n $ph -o $o -maf 0.01 -w 200000 -s 1000000 -k output/o_red_GB.cXX.txt\n";
+	    		system "gemma -g $gfile1 -p $pfile1 -bslmm 1 -n $ph -o $o -maf 0.01 -w 200000 -s 1000000 -k output/o_red_GB.cXX.txt\n";
+		}
+		## green genome
+		$o = "o_poly_bslmm_green_ph$ph"."_ch$ch";
+		if($ph == 1){
+	    		print "gemma -g $gfile2 -p $pfile2 -bslmm 1 -n $ph -o $o -maf 0.01 -w 200000 -s 1000000 -k output/o_green_RG.cXX.txt\n";
+	    		system "gemma -g $gfile2 -p $pfile2 -bslmm 1 -n $ph -o $o -maf 0.01 -w 200000 -s 1000000 -k output/o_green_RG.cXX.txt\n";
+		} elsif($ph == 2){
+	    		print "gemma -g $gfile2 -p $pfile2 -bslmm 1 -n $ph -o $o -maf 0.01 -w 200000 -s 1000000 -k output/o_green_GB.cXX.txt\n";
+	    		system "gemma -g $gfile2 -p $pfile2 -bslmm 1 -n $ph -o $o -maf 0.01 -w 200000 -s 1000000 -k output/o_green_GB.cXX.txt\n";
 		}
 		$pm->finish;
 	}
@@ -859,7 +865,9 @@ foreach $ph (1..2){
 $pm->wait_all_children;
 ```
 
-I summarized the results from the chains, see [calpost.pl](calpost.pl) and [grabPips.pl](grabPips.pl), and then summarized the mapping analysis in R [summarizeGwaPoly.R](summarizeGwaPoly.R).
+I summarized the results from these model fits see: [calpost.pl](calpost.pl), [grabMavEffects.pl](grabMavEffects.pl), [grabMavEffectsCh8.pl](grabMavEffectsCh8.pl),  [grabMavEffectsFocal.pl](grabMavEffectsFocal.pl), [grabPips.pl](grabPips.pl), [grabPipsCh8.pl](grabPipsCh8.pl), and  [grabPipsFocal.pl](grabPipsFocal.pl), and then summarized the mapping analysis in R [summarizeGwaPoly_green.R](summarizeGwaPoly_green.R) and [summarizeGwaPoly_red.R](summarizeGwaPoly_red.R).
+
+!!NOTE TEXT BELOW NEEDS UPDATED STILL!!
 
 I next repeated all of the above (but with subsetting first) for GR8.06. See [FormatPhenoGR8.R](FormatPhenoGR8.R), [GetHetPdataGR8.R](GetHetPdataGR8.R), [SubSetHetGenoGR8.R](SubSetHetGenoGR8.R), [summarizeGwaGR.R](summarizeGwaGR.R), [grabPipsGR8.pl](grabPipsGR8.pl) and [summarizeGwaPolyGR.R](summarizeGwaPolyGR.R). 
 
