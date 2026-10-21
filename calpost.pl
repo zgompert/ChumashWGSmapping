@@ -1,7 +1,11 @@
 #!/usr/bin/perl
 
-$out = "post_gemma_GR8_color.txt";
-#$out = "post_gemma_color.txt";
+#$out = "post_gemma_genome_red.txt";
+#$out = "post_gemma_genome_green.txt";
+#$out = "post_gemma_ch8_green.txt";
+#$out = "post_gemma_ch8_red.txt";
+$out = "post_gemma_focal_green.txt";
+#$out = "post_gemma_focal_red.txt";
 
 system "touch $out\n";
 
@@ -9,26 +13,28 @@ open(R, "> source.R") or die "faile to write R file\n";
 
 $nph = 2;
 
+#$nchain = 60;
+$nchain = 20;
 print R "phm<-matrix(NA,nrow=$nph,ncol=9)\n";
 
 $p = 1;
 foreach $ph (@ARGV){
-		print R "phl<-vector(\"list\",60)\n";
-		foreach $i (1..60){
+		print R "phl<-vector(\"list\",$nchain)\n";
+		foreach $i (1..$nchain){
 			$j = $i-1;
-			$ph =~ s/ch\d+/ch$j/;
+			$ph =~ s/ch\d+\./ch$j./;
 			$in = $ph;
 			print R "phl[[$i]]<-read.table(\"$in\",header=TRUE)\n";
 		}
 		print R "ph<-c(phl[[1]][,2]";
-		foreach $i (2..60){
+		foreach $i (2..$nchain){
 			print R ",phl[[$i]][,2]";
 		}
 		print R ")\n
                 q<-quantile(ph,probs=c(0.5,0.05,0.95))\n
 		phm[$p,1:3]<-q\n";
 		print R "ph<-c(phl[[1]][,4]";
-		foreach $i (2..60){
+		foreach $i (2..$nchain){
 			print R ",phl[[$i]][,4]";
 		}
 		print R ")\n
@@ -36,7 +42,7 @@ foreach $ph (@ARGV){
 		phm[$p,4:6]<-q\n";
 
 		print R "ph<-c(phl[[1]][,6]";
-		foreach $i (2..60){
+		foreach $i (2..$nchain){
 			print R ",phl[[$i]][,6]";
 		}
 		print R ")\n
