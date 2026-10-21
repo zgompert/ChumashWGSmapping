@@ -337,6 +337,9 @@ foreach $chrom (@ARGV){
 $pm->wait_all_children;
 
 ```
+
+## Variant filtering 
+
 The resulting vcf files are here: `/uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/vcfs`. 
 
 I used `vcfFilter.pl` (version below) to filter the vcf files for each chromosome:
@@ -463,8 +466,75 @@ close (OUT);
 print "Finished filtering $in\nRetained $cnt variable loci\n";
 
 ```
-I then extracted the depth data per SNP and individual from the vcf files and used coverage thresholds to determine which individuals and SNPs to retain, see [CovFilt.R](CovFilt.R).
- 
+I then extracted the depth data per SNP and individual from the vcf files and used coverage thresholds to determine which individuals and SNPs to retain, see [CovFilt.R](CovFilt.R). This generates files with binary encodings of which individuals and SNPs to keep: `KeepInds_G.txt`, `KeepInds_R.txt`, `KeepSNPs_G.txt`, `KeepSNPs_R.txt`. I next applied the SNP-level filtering:
+
+```bash
+#!/bin/bash
+#SBATCH --time=48:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=8
+#SBATCH --mem=120G
+#SBATCH --account=gompert
+#SBATCH --partition=gompert-grn
+#SBATCH --qos=gompert-grn
+#SBATCH --job-name=filter
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+cd /scratch/general/nfs1/u6000989/chumash_aligns/vcfs
+
+perl filterSomeMore2.pl KeepSNPs_G.txt comb_f2x_green_hap1.vcf
+perl filterSomeMore2.pl KeepSNPs_R.txt comb_f2x_red_hap1.vcf
+```
+which runs [filterSomeMore2.pl](filterSomeMore2.pl):
+
+```perl
+#!/usr/bin/perl
+
+
+# filter vcf files based on coverage
+
+$sfile = shift(@ARGV);
+
+open(IN, $sfile) or die "failed initial read\n";
+while(<IN>){
+	chomp;
+	push(@keep,$_);
+}
+close(IN);
+
+
+foreach $in (@ARGV){
+	open (IN, $in) or die "Could not read the infile = $in\n";
+	$in =~ m/^([a-zA-Z0-9_]+\.vcf)$/ or die "Failed to match the variant file\n";
+	open (OUT, "> morefilter_$1") or die "Could not write the outfile\n";
+
+
+	while (<IN>){
+		chomp;
+		if (m/^\#/){ ## header row, always write
+			$flag = 1;
+		}
+		elsif (m/^hap/){ ## this is a sequence line, you migh need to edit this reg. expr.
+			$flag = shift(@keep);
+			if ($flag == 1){
+				$cnt++; ## this is a good SNV
+			}
+		}
+		else{
+			print "Warning, failed to match the chromosome or scaffold name regular expression for this line\n$_\n";
+			$flag = 0;
+		}
+		if ($flag == 1){
+			print OUT "$_\n";
+		}
+	}
+	close (IN);
+	close (OUT);
+
+	print "Finished filtering $in\nRetained $cnt variable loci\n";
+}
+```
 
 ## Chromosome 8 SV calling with SyRI
 
