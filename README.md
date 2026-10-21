@@ -77,7 +77,7 @@ I first indexed the relevant genomes.
 ```bash
 /uufs/chpc.utah.edu/common/home/u6000989/source/bwa-mem2-2.0pre2_x64-linux/bwa-mem2 index Hap1Chr.fasta
 ```
-I began with the alignments for HFS, this includes 454 indiviudals and 910 sequenced libraries (listed in `files`). The temporary results are being written here: `/scratch/general/nfs1/u6000989/chumash_aligns`.
+I began with the alignments for HF5, this includes 454 indiviudals and 910 sequenced libraries (listed in `files`). The temporary results are being written here: `/scratch/general/nfs1/u6000989/chumash_aligns`.
 
 ```bash
 #!/bin/bash
@@ -482,7 +482,7 @@ perl vcf2gl.pl 0.0 morefilter_comb_f2x_red_hap1.vcf
 ## Genotype estimation
 
 
-I first used `estpEM` (version 0.1)  (from [Soria-Carrasco et al 204](https://www.science.org/doi/full/10.1126/science.1252136)) to estimate population (for HFS) allele frequencies based on each genome.
+I first used `estpEM` (version 0.1)  (from [Soria-Carrasco et al 204](https://www.science.org/doi/full/10.1126/science.1252136)) to estimate population (for HF5) allele frequencies based on each genome.
 
 ```bash
 #!/bin/bash
@@ -534,7 +534,7 @@ The output files are cpntest_green_tchum.txt for the posterior mean and mlpntest
 
 ## Repeating analyses for a second population
 
-Most of my analyses focus on the HFS population. However, I repeated all of the alignment, variant calling and genotype estimation steps described above with a second population GR8 to have an opportunity to examine the consistency of genotype-phenotype associations. This data set has 566 individuals with 78,516,750 SNPs in the gl file, `tchum_gr8_green.gl`. Note that here I am only using the green genome to keep things managable. The same methods were applied to these data and the resulting genotype files are also in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gendat_rev/` with vcfs in `/uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/vcf_gr8`.
+Most of my analyses focus on the HF5 population. However, I repeated all of the alignment, variant calling and genotype estimation steps described above with a second population GR8 to have an opportunity to examine the consistency of genotype-phenotype associations. This data set has 566 individuals with 78,516,750 SNPs in the gl file, `tchum_gr8_green.gl`. Note that here I am only using the green genome to keep things managable. The same methods were applied to these data and the resulting genotype files are also in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gendat_rev/` with vcfs in `/uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/vcf_gr8`.
 
 ## Chromosome 8 SV calling with SyRI
 
