@@ -453,7 +453,7 @@ foreach $in (@ARGV){
 	print "Finished filtering $in\nRetained $cnt variable loci\n";
 }
 ```
-Next, I combined the chromosome-specific vcf files and coverted the vcf files to gl files; see [vcf2gl.pl](vcf2gl.pl):
+Next, I combined the chromosome-specific vcf files and converted the vcf files to gl files; see [vcf2gl.pl](vcf2gl.pl):
 
 ```bash
 #!/bin/bash
@@ -504,9 +504,9 @@ estpEM -i tchum_green.gl -o p_tchum_green.txt -e 0.0001 -m 50 -h 2
 estpEM -i tchum_red.gl -o p_tchum_red.txt -e 0.0001 -m 50 -h 2 
 ```
 
-These files include allele frquency estimates for 53,378,633 (green genome) or 53,128,874 (red genome) SNPs, with 455 individuals from the 2019 experiment (Horse Flats).
+These files include allele frequency estimates for 53,378,633 (green genome) or 53,128,874 (red genome) SNPs, with 455 individuals from the 2019 experiment (Horse Flats).
 
-I then obtained Bayesian estiamtes of genotypes using the allele frequency priors (under assuming HW genotype frequencies as prior expectations). I did this using both the posterior mode and mean. I am processing the results from the mode first, but want to see how much this matters. I used new C programs, based on my older perl script, for the empirical Bayes genotype esimates, see [gl2genest.c](gl2genest.c) and [gl2genestMax.c](gl2genestMax.c).
+I then obtained Bayesian estimates of genotypes using the allele frequency priors (under assuming HW genotype frequencies as prior expectations). I did this using both the posterior mode and mean. I am processing the results from the mode first, but want to see how much this matters. I used new C programs, based on my older perl script, for the empirical Bayes genotype estimates, see [gl2genest.c](gl2genest.c) and [gl2genestMax.c](gl2genestMax.c).
 
 ```bash
 #!/bin/bash
@@ -534,7 +534,131 @@ The output files are cpntest_green_tchum.txt for the posterior mean and mlpntest
 
 ## Repeating analyses for a second population
 
-Most of my analyses focus on the HF5 population. However, I repeated all of the alignment, variant calling and genotype estimation steps described above with a second population GR8 to have an opportunity to examine the consistency of genotype-phenotype associations. This data set has 566 individuals with 78,516,750 SNPs in the gl file, `tchum_gr8_green.gl`. Note that here I am only using the green genome to keep things managable. The same methods were applied to these data and the resulting genotype files are also in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gendat_rev/` with vcfs in `/uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/vcf_gr8`.
+Most of my analyses focus on the HF5 population. However, I repeated all of the alignment, variant calling and genotype estimation steps described above with a second population GR8 to have an opportunity to examine the consistency of genotype-phenotype associations. This data set has 566 individuals with 78,516,750 SNPs in the gl file, `tchum_gr8_green.gl`. Note that here I am only using the green genome to keep things manageable. The same methods were applied to these data and the resulting genotype files are also in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gendat_rev/` with vcfs in `/uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/vcf_gr8`. Also note that prior to genotype estimation, I removed 21 individuals with GR8 in the sample name (these were samples from the same population but without trait data, and thus were not useful for GWA mapping) and 21 individuals with excessively low or high coverage (as indicates in the `KeepInds.txt` files based on coverage calculations). Thus, the final gl file, `GR8_tchum_gr8_green.gl` contains 520 individuals and 78,516,750 SNPs. Here is that last step:
+
+```bash
+#!/bin/bash
+#SBATCH --time=48:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=8
+#SBATCH --mem=120G
+#SBATCH --account=gompert
+#SBATCH --partition=gompert-grn
+#SBATCH --qos=gompert-grn
+#SBATCH --job-name=split
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+
+cd /scratch/general/nfs1/u6000989/chumash_aligns/vcf_gr8
+
+perl splitPops.pl KeepInds.txt tchum_gr8_green.gl
+```
+Which runs this:
+
+```perl
+#!/usr/bin/perl
+#
+# splits a genotype likelihood file by population and year
+#
+# usage splitPops.pl KeepInds_*.txt in.gl
+#
+
+
+## read in indexes (order of gl) of samples to keep based on coverage
+$kfile = shift(@ARGV);
+open(IN, $kfile) or die "Failed to read keep ids\n";
+while(<IN>){
+	chomp;
+	push (@keep,$_);
+}
+
+close(IN);
+
+## read in the pop id file
+open(IN, "idsall.txt") or die "Could not read the population ID file\n";
+while(<IN>){
+	chomp;
+	m/^(\S+)\s+(\S+)/ or die "failed here on IDs: $_\n";
+	$pid{$1} = $2;
+}
+close(IN);
+
+## get gl file
+my $in = shift (@ARGV);
+
+open(IN, $in) or die "failed to open the infile\n";
+
+## get no. loci, no. inds
+$line = <IN>;
+chomp($line);
+$line =~ m/(\d+)\s+(\d+)/;
+$nind = $1;
+$nloc = $2;
+
+## get ind. and pop. ids
+$line = <IN>;
+chomp($line);
+@line = split (" ",$line);
+foreach $ind (@line){
+	$id = $pid{$ind};
+	$k = shift(@keep);
+	if($k == 0){
+		$id = "NA";
+	}
+	print "$ind = $id\n";
+	push (@id,$id);
+	push (@{$popids{$id}},$ind);
+	$ids{$id} = 1;
+	if(defined $popn{$id}){
+		$popn{$id}++;
+	}
+	else {
+		$popn{$id} = 1;
+	}
+}
+
+
+## open one file per population
+foreach $id (sort keys %ids){
+	$fh = "F"."$id";
+	$out = "$id"."_$in";
+	print "$out\n";
+	open ($fh, "> $out") or die "Could not write $id\n";
+	$files{$id} = $fh;
+	print {$files{$id}} "$popn{$id} $nloc\n";
+	$pids = join (" ",@{$popids{$id}});
+	print {$files{$id}} "$pids\n";
+	@ones = ();
+	for($i=0;$i<$popn{$id}; $i++){
+		push (@ones,1);
+	}
+	$ones = join (" ", @ones);
+	print {$files{$id}} "$ones\n";
+}
+
+## read and write
+while (<IN>){
+	chomp;
+	@line = split (" ",$_);
+	$a = shift(@line); ## locus info
+	foreach $id (sort keys %ids){
+		print {$files{$id}} "$a";
+	}
+	for ($i=0; $i<$nind; $i++){
+		$id = $id[$i];
+		for ($j=0; $j<3; $j++){
+			$a = shift(@line); 
+			print {$files{$id}} " $a";
+		}
+	}	
+	foreach $id (sort keys %ids){
+		print {$files{$id}} "\n";
+	}
+			
+}
+close (IN);
+```
 
 ## Chromosome 8 SV calling with SyRI
 
