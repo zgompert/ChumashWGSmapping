@@ -482,6 +482,60 @@ perl vcf2gl.pl 0.0 morefilter_comb_f2x_red_hap1.vcf
 ## Genotype estimation
 
 
+I first used `estpEM` (version 0.1)  (from [Soria-Carrasco et al 204](https://www.science.org/doi/full/10.1126/science.1252136)) to estimate population (for HFS) allele frequencies based on each genome.
+
+```bash
+#!/bin/bash
+#SBATCH --time=48:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=12
+#SBATCH --mem=600G
+#SBATCH --account=gompert
+#SBATCH --partition=gompert-grn
+#SBATCH --qos=gompert-grn
+#SBATCH --job-name=estp
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+
+cd /scratch/general/nfs1/u6000989/chumash_aligns/vcfs
+
+estpEM -i tchum_green.gl -o p_tchum_green.txt -e 0.0001 -m 50 -h 2 
+estpEM -i tchum_red.gl -o p_tchum_red.txt -e 0.0001 -m 50 -h 2 
+```
+
+These files include allele frquency estimates for 53,378,633 (green genome) or 53,128,874 (red genome) SNPs, with 455 individuals from the 2019 experiment (Horse Flats).
+
+I then obtained Bayesian estiamtes of genotypes using the allele frequency priors (under assuming HW genotype frequencies as prior expectations). I did this using both the posterior mode and mean. I am processing the results from the mode first, but want to see how much this matters. I used new C programs, based on my older perl script, for the empirical Bayes genotype esimates, see [gl2genest.c](gl2genest.c) and [gl2genestMax.c](gl2genestMax.c).
+
+```bash
+#!/bin/bash
+#SBATCH --time=72:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=12
+#SBATCH --mem=600G
+#SBATCH --account=gompert
+#SBATCH --partition=gompert-grn
+#SBATCH --qos=gompert-grn
+#SBATCH --job-name=estG
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+cd /scratch/general/nfs1/u6000989/chumash_aligns/vcfs
+
+## posterior mode
+./gl2genestMax pp_tchum_green.txt tchum_green.gl
+./gl2genestMax pp_tchum_red.txt tchum_red.gl
+## posterior mean
+./gl2genest pp_tchum_green.txt tchum_green.gl
+./gl2genest pp_tchum_red.txt tchum_red.gl
+```
+The output files are cpntest_green_tchum.txt for the posterior mean and mlpntest_green_tchum.txt for the posterior mode (or similar for the red genome). These are for the 2019 experiment and contain 455 individuals (columns) and about 53 million SNPs (rows) each. These files, along with the gl files, are in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gendat_rev/`.
+
+## Repeating analyses for a second population
+
+Most of my analyses focus on the HFS population. However, I repeated all of the alignment, variant calling and genotype estimation steps described above with a second population GR8 to have an opportunity to examine the consistency of genotype-phenotype associations. This data set has 566 individuals with 78,516,750 SNPs in the gl file, `tchum_gr8_green.gl`. Note that here I am only using the green genome to keep things managable. The same methods were applied to these data and the resulting genotype files are also in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gendat_rev/` with vcfs in `/uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/vcf_gr8`.
+
 ## Chromosome 8 SV calling with SyRI
 
 I am using `SyRI` (version 1.8.2) to call structural variants on chromosome 8 based on the 10 phased genomes. This is really a pairwise analysis and requires a designated referene genome. I am using the same two genomes as references that I used for the re-analysis:  24_0159h1 (a melanic *T. chumash*) and 24_0163h1 (a green *T. chumash*) and aligning each to all of the others. I am doing this with and without masking. The reason for using `SyRI` is that it defines breakpoints and SV types in a pretty clear and explicit manner. See [Goel et al. 2019](https://link.springer.com/article/10.1186/s13059-019-1911-0) for a description of the method, as well as [the GitHub page](https://github.com/schneebergerlab/syri) for the software.
