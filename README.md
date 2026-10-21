@@ -71,7 +71,7 @@ Next, I conducted a series of pairwise alignments, of these genomes to each othe
 
 ## Pangome for SV visualization
 
-The main analyses focus on the comparative alignment, but I also constructed a pangenome for chromosome 8 only to visualize the complexity of chromosomal rearrangments. I did this with `cactus-minigraph` (version 3.0.1). Everything for this is currently (temporarily) in `/scratch/general/nfs1/u6000989/cactus`.
+The main analyses focus on the comparative alignment, but I also constructed a pangenome for chromosome 8 only to visualize the complexity of chromosomal rearrangments. I did this with `cactus-minigraph` (version 3.0.1). The results are in `/gompert-group5/projects/t_chum_mapping/pangenome/`. In the end, the graph construction fails to connect the color region well across genomes; I think they are just too divergent.
 
 I constructed the pangenome with:
 
@@ -98,7 +98,7 @@ cd /scratch/general/nfs1/u6000989/cactus
 cactus-pangenome jtchum_gp ch8seqs.txt --outDir /scratch/general/nfs1/u6000989/cactus/ --outName tchum_gp --reference tchum_24_0163_h1 --maxCores 48 --vcf --giraffe --gfa --gbz --chrom-og --viz
 ```
 
-Here, `ch8seqs.txt` (shown below, the file:// bit was added by the program) provides the names and paths to the chromosome 8 assemblies, `jtchum_gp` is a job storae and the options at the end produce a variety of outputs the could be useful.
+Here, `ch8seqs.txt` (shown below, the file:// bit was added by the program) provides the names and paths to the chromosome 8 assemblies, `jtchum_gp` is a job storage and the options at the end produce a variety of outputs the could be useful.
 
 ```
 tchum_24_0163_h1        file:///uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri/ch8_24_0163_hap1.fasta
@@ -337,8 +337,134 @@ foreach $chrom (@ARGV){
 $pm->wait_all_children;
 
 ```
+The resulting vcf files are here: `/uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/vcfs`. 
 
+I used `vcfFilter.pl` (version below) to filter the vcf files for each chromosome:
 
+```perl
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+
+# this program filters a vcf file based on overall sequence coverage, number of non-reference reads, number of alleles, and reverse orientation reads
+
+# usage vcfFilter.pl infile.vcf
+#
+# change the marked variables below to adjust settings
+#
+
+#### stringency variables, edits as desired
+## 455 inds, 2x
+my $minCoverage = 910; # minimum number of sequences; DP
+my $minAltRds = 10; # minimum number of sequences with the alternative allele; AC
+my $notFixed = 1.0; # removes loci fixed for alt; AF
+my $bqrs = 3; # Z-score base quality rank sum test; BaseQRankSum
+my $mqrs = 3; # Z-score mapping quality rank sum test; MQRankSum
+my $rprs = 3; # Z-score read position rank sum test; ReadPosRankSum
+my $mq = 30; # minimum mapping quality; MQ
+my $miss = 46; # maximum number of individuals with no data = 10%
+##### this set is for GBS
+my $d;
+
+my @line;
+
+my $in = shift(@ARGV);
+open (IN, $in) or die "Could not read the infile = $in\n";
+$in =~ m/^\.\/([a-zA-Z_0-9\-_]+)\.vcf$/ or die "Failed to match the variant file\n";
+open (OUT, "> filtered2x_$1.vcf") or die "Could not write the outfile\n";
+
+my $flag = 0;
+my $cnt = 0;
+
+while (<IN>){
+	chomp;
+	$flag = 1;
+	if (m/^\#/){ ## header row, always write
+		$flag = 1;
+	}
+	elsif (m/^hap/){ ## this is a sequence line, you migh need to edit this reg. expr.
+		$flag = 1;
+		$d = () = (m/\d\/\d:0,0,0:0/g); ## for bcftools call
+		if ($d >= $miss){
+			$flag = 0;
+			##print "fail missing : ";
+		}
+		if (m/[ACTGN]\,[ACTGN]/){ ## two alternative alleles identified
+			$flag = 0;
+			#print "fail allele : ";
+		}
+		@line = split(/\s+/,$_);
+		if(length($line[3]) > 1 or length($line[4]) > 1){
+			$flag = 0;
+			#print "fail INDEL : ";
+		}
+		m/DP=(\d+)/ or die "Syntax error, DP not found\n";
+		if ($1 < $minCoverage){
+			$flag = 0;
+			#print "fail DP : ";
+		}
+## bcftools call version
+	
+		m/DP4=\d+,\d+,(\d+),(\d+)/ or die "Syntax error DP4 not found\n";
+		if(($1 + $2) < $minAltRds){
+			$flag = 0;
+		}
+		m/AF1*=([0-9\.e\-]+)/ or die "Syntax error, AF not found\n";
+		if ($1 == $notFixed){
+			$flag = 0;
+		#	print "fail AF : ";
+		}
+
+## bcftools call verions, these are p-values, use 0.01
+		if(m/BQBZ=([0-9e\-\.]*)/){
+			if (abs($1) > $bqrs){
+				$flag = 0;
+#				print "fail BQRS : ";
+			}
+		}
+		if(m/MQBZ=([0-9e\-\.]*)/){
+			if (abs($1) > $mqrs){
+				$flag = 0;
+#				print "fail MQRS : ";
+			}
+		}
+		if(m/RPBZ=([0-9e\-\.]*)/){
+			if (abs($1) > $rprs){
+				$flag = 0;
+#				print "fail RPRS : ";
+			}
+		}
+		if(m/MQ=([0-9\.]+)/){
+			if ($1 < $mq){
+				$flag = 0;
+#				print "fail MQ : ";
+			}
+		}
+		else{
+			$flag = 0;
+			print "faile no MQ : ";
+		}
+		if ($flag == 1){
+			$cnt++; ## this is a good SNV
+		}
+	}
+	else{
+		print "Warning, failed to match the chromosome or scaffold name regular expression for this line\n$_\n";
+		$flag = 0;
+	}
+	if ($flag == 1){
+		print OUT "$_\n";
+	}
+}
+close (IN);
+close (OUT);
+
+print "Finished filtering $in\nRetained $cnt variable loci\n";
+
+```
+I then extracted the depth data per SNP and individual from the vcf files and used coverage thresholds to determine which individuals and SNPs to retain, see [CovFilt.R](CovFilt.R).
+ 
 
 ## Chromosome 8 SV calling with SyRI
 
