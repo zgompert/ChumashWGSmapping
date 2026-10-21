@@ -69,7 +69,6 @@ RepeatMasker -gff -a -xm -s -e ncbi -xsmall -pa 44 -lib RepeatLibMergeCentroidsR
 Next, I conducted a series of pairwise alignments, of these genomes to each other and to other *Timema* genomes. These were all done (once again) with `cactus`. See, [runCactusChum1.sh](runCactusChum1.sh)-[runCactusChum6.sh](runCactusChum6.sh) (I did this in various batches). 
 
 
-
 # Alignment and variant calling
 
 I first indexed the relevant genomes.
@@ -481,7 +480,6 @@ perl vcf2gl.pl 0.0 morefilter_comb_f2x_red_hap1.vcf
 
 ## Genotype estimation
 
-
 I first used `estpEM` (version 0.1)  (from [Soria-Carrasco et al 204](https://www.science.org/doi/full/10.1126/science.1252136)) to estimate population (for HF5) allele frequencies based on each genome.
 
 ```bash
@@ -549,7 +547,6 @@ Most of my analyses focus on the HF5 population. However, I repeated all of the 
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=zach.gompert@usu.edu
 
-
 cd /scratch/general/nfs1/u6000989/chumash_aligns/vcf_gr8
 
 perl splitPops.pl KeepInds.txt tchum_gr8_green.gl
@@ -563,7 +560,6 @@ Which runs this:
 #
 # usage splitPops.pl KeepInds_*.txt in.gl
 #
-
 
 ## read in indexes (order of gl) of samples to keep based on coverage
 $kfile = shift(@ARGV);
@@ -617,7 +613,6 @@ foreach $ind (@line){
 		$popn{$id} = 1;
 	}
 }
-
 
 ## open one file per population
 foreach $id (sort keys %ids){
@@ -757,41 +752,48 @@ while(<IN>){
 close(IN);
 close(OUT);
 ```
-Next, working in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gemma_rev`, I preprated the phenotypic data for the 2019 experimental popualtion, this includes RG, GB and (binary) survival (I didn't analyze the latter this time). See [FormatPheno.R](FormatPheno.R).
+Next, working in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gemma_rev`, I prepared the phenotypic data for the 2019 experimental population, this includes RG, GB and (binary) survival (I didn't analyze the latter this time). See [FormatPheno.R](FormatPheno.R).
 
-I also got data on observed heterzygosity, deviations between observed and expected heterozygosity and allele frequencies to filter out potentially problematic SNPs. See [GetHetPdata.R](GetHetPdata.R). I used this information to create a subset geno file that keeps only SNPs with deviations between observed and expected heterozygosity < .2. See [SubSetHetGeno.R](SubSetHetGeno.R). I ran initial LMM analyses on color and surival on the geno file before subsetting, though I then did some subsetting in plots after the fact. 
+I also got data on observed heterozygosity, deviations between observed and expected heterozygosity and allele frequencies to filter out potentially problematic SNPs. See [GetHetPdata.R](GetHetPdata.R). I used this information to create a subset geno file that keeps only SNPs with deviations between observed and expected heterozygosity < .2. See [SubSetHetGeno.R](SubSetHetGeno.R). After this final filtering, the number of analyzed SNPs was 39,184,098 and 38,967,857 for the green and red genomes, respectively (455 individuals in each case).
 
-For the LMM.
+I ran the LMM in `gemma` as follows:
 
 ```bash
 #!/bin/bash
 #SBATCH --time=96:00:00
 #SBATCH --nodes=1
-#SBATCH --ntasks=12
-#SBATCH --account=wolf-kp
-#SBATCH --partition=wolf-kp
+#SBATCH --ntasks=6
+#SBATCH --mem=120G
+#SBATCH --account=gompert
+#SBATCH --partition=gompert-grn
+#SBATCH --qos=gompert-grn
 #SBATCH --job-name=gemma
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=zach.gompert@usu.edu
 
 module load gemma
 # 0.95a
+cd /uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gemma_rev
 
-cd /uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gemma
+gfile="hsub_mlpntest_tchum_red.geno"
+pfile="ph_tchum_red.txt"
+oseed="o_red_"
+#gfile="hsub_mlpntest_tchum_green.geno"
+#pfile="ph_tchum_green.txt"
+#oseed="o_green_"
 
 ## RG 
-gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_RG -maf 0
-gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_RG.cXX.txt -lmm 4 -n 1 -o o_RG -maf 0
+of="{$oseed}RG"
+gemma -g  $gfile -p $pfile -gk 1 -o $of -maf 0
+gemma -g  $gfile -p $pfile -k output/$of.cXX.txt -lmm 4 -n 1 -o $of -maf 0
 
 ## GB 
-gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_GB -maf 0
-gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_GB.cXX.txt -lmm 4 -n 2 -o o_GB -maf 0
-
-## Surv 
-#gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_SURV -maf 0
-gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_SURV.cXX.txt -lmm 4 -n 3 -o o_SURV -maf 0
+of="{$oseed}GB"
+gemma -g  $gfile -p $pfile -gk 1 -o $of -maf 0
+gemma -g  $gfile -p $pfile -k output/$of.cXX.txt -lmm 4 -n 2 -o $of -maf 0
 ```
-This was summarized with [summarizeGwa.R](summarizeGwa.R).
+
+These initial analyses were summarized and examined with [Gwa_green.R](Gwa_green.R) and [Gwa_red.R](Gwa_red.R).
 
 Next, I ran the BSLMM with the subset version. I ran 60 chains total.
 
