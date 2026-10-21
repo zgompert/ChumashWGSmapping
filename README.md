@@ -660,6 +660,216 @@ while (<IN>){
 close (IN);
 ```
 
+## Genome-wide association mapping for color
+
+My revised GWA mapping analyses and results in here: `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gemma_rev`; some initial steps prior to mapping are here: `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gendat_rev`.
+
+I prepared the genetic data for GWA mapping with `gemma`. I did this first for the 2019 data set (HF5). I first identified common SNPs within that data set, that is SNPs with a minor allele frequency > 0.01. I did this for both genome assemblies (here is the updated script):
+
+```r
+## getCommon.R from /uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gendat_rev
+library(data.table)
+
+#### green ##############
+g<-as.matrix(fread("mlpntest_tchum_green.txt",header=FALSE))
+p<-apply(g,1,mean)/2
+mean(p > 0.05 & p < 0.95)
+#[1] 0.4272212
+mean(p > 0.025 & p < 0.975)
+#[1] 0.573455
+mean(p > 0.01 & p < 0.99)
+#[1] 0.7389187
+
+keep<-as.numeric(p > 0.01 & p < 0.99)
+
+write.table(keep,file="KeepSnps_green.txt",row.names=FALSE,col.names=FALSE,quote=FALSE)
+
+###### red #########3
+g<-as.matrix(fread("mlpntest_tchum_red.txt",header=FALSE))
+p<-apply(g,1,mean)/2
+mean(p > 0.05 & p < 0.95)
+#[1] 0.4254356
+mean(p > 0.025 & p < 0.975)
+#[1] 0.5722804
+mean(p > 0.01 & p < 0.99)
+#[1] 0.7381405
+
+keep<-as.numeric(p > 0.01 & p < 0.99)
+```
+
+I also extracted the scaffold, position and allele information from the vcf files, which I wrote to the files `FullSNPTable_green.txt` and `FullSNPTable_red.txt`. I then ran [FormatGeno.pl](FormatGeno.pl) to create the geno file from the model genotype esimate file.
+
+```bash
+#!/bin/bash
+
+cd /scratch/general/nfs1/u6000989/t_chumash_wgs
+
+perl FormatGeno.pl KeepSnps_green.txt FullSNPTable_green.txt mlpntest_tchum_green.txt
+perl FormatGeno.pl KeepSnps_red.txt FullSNPTable_red.txt mlpntest_tchum_red.txt
+```
+
+```perl
+#!/usr/bin/perl
+#
+# takes a file with a vector of SNPs to keep
+# a snp info file and a genotype fileand generates gemma input
+# example: CommonSnps.txt FullSNPTable.txt mlpntest_EXP_tchum.txt
+
+$kf = shift(@ARGV); ## keep file
+$sf = shift(@ARGV); ## SNP file
+$gf = shift(@ARGV); ## genotype file
+
+## get set of SNPs to keep
+open(IN, $kf) or die "failed to read $kf\n";
+while(<IN>){
+	chomp;
+	push(@keep,$_);
+}
+close(IN);
+
+## get SNP information
+open(IN, $sf) or die;
+while(<IN>){
+	chomp;
+	s/^hap1_Chr(\d+)\S+\s+/\1:/;
+	s/\s+/ /g;
+	push(@snps,$_);
+}
+close(IN);
+
+print "Formatting genotype file now\n";
+
+## subset and format genotype file
+open(IN, $gf);
+$out = $gf;
+$out =~ s/txt/geno/ or die "failed sub: $out\n";
+open(OUT, "> $out") or die;
+while(<IN>){
+	chomp;
+	$k = shift(@keep);
+	$s = shift(@snps);
+	if($k == 1){
+		$o = "$s $_";
+		$o =~ s/ /, /g;
+		print OUT "$o\n";
+	}
+}
+close(IN);
+close(OUT);
+```
+Next, working in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gemma_rev`, I preprated the phenotypic data for the 2019 experimental popualtion, this includes RG, GB and (binary) survival (I didn't analyze the latter this time). See [FormatPheno.R](FormatPheno.R).
+
+I also got data on observed heterzygosity, deviations between observed and expected heterozygosity and allele frequencies to filter out potentially problematic SNPs. See [GetHetPdata.R](GetHetPdata.R). I used this information to create a subset geno file that keeps only SNPs with deviations between observed and expected heterozygosity < .2. See [SubSetHetGeno.R](SubSetHetGeno.R). I ran initial LMM analyses on color and surival on the geno file before subsetting, though I then did some subsetting in plots after the fact. 
+
+For the LMM.
+
+```bash
+#!/bin/bash
+#SBATCH --time=96:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=12
+#SBATCH --account=wolf-kp
+#SBATCH --partition=wolf-kp
+#SBATCH --job-name=gemma
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load gemma
+# 0.95a
+
+cd /uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gemma
+
+## RG 
+gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_RG -maf 0
+gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_RG.cXX.txt -lmm 4 -n 1 -o o_RG -maf 0
+
+## GB 
+gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_GB -maf 0
+gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_GB.cXX.txt -lmm 4 -n 2 -o o_GB -maf 0
+
+## Surv 
+#gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_SURV -maf 0
+gemma -g  mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_SURV.cXX.txt -lmm 4 -n 3 -o o_SURV -maf 0
+```
+This was summarized with [summarizeGwa.R](summarizeGwa.R).
+
+Next, I ran the BSLMM with the subset version. I ran 60 chains total.
+
+```bash
+#!/bin/bash
+#SBATCH --time=240:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=12
+#SBATCH --account=wolf-kp
+#SBATCH --partition=wolf-kp
+#SBATCH --job-name=gemma
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+module load gemma
+# 0.95a
+
+cd /uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gemma
+
+## RG 
+gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_poly_RG -maf 0
+gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_poly_RG.cXX.txt -lmm 4 -n 1 -o o_poly_RG -maf 0
+
+## GB 
+gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_poly_GB -maf 0
+gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_poly_GB.cXX.txt -lmm 4 -n 2 -o o_poly_GB -maf 0
+
+## Surv 
+gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -gk 1 -o o_poly_SURV -maf 0
+gemma -g  hsub_mlpntest_EXP_tchum.geno -p ph_tchum2019.txt -k output/o_poly_SURV.cXX.txt -lmm 4 -n 3 -o o_poly_SURV -maf 0
+
+## now polygenic BSLMM
+perl forkRunGemma.pl
+```
+The perl script is:
+```perl
+#!/usr/bin/perl
+#
+# fit gemma BSLMM for T. chumash color 
+#
+
+use Parallel::ForkManager;
+my $max = 40;
+my $pm = Parallel::ForkManager->new($max);
+
+$g = "hsub_mlpntest_EXP_tchum.geno";
+$p = "ph_tchum2019.txt";
+
+
+foreach $ph (1..2){ 
+	foreach $ch (0..59){
+		sleep 2;
+		$pm->start and next;
+		$o = "o_poly_bslmm_ph$ph"."_ch$ch";
+		if($ph == 1){
+	    		system "gemma -g $g -p $p -bslmm 1 -n $ph -o $o -maf 0 -w 200000 -s 1000000 -k output/o_poly_RG.cXX.txt\n";
+		} elsif($ph == 2){
+	    		system "gemma -g $g -p $p -bslmm 1 -n $ph -o $o -maf 0 -w 200000 -s 1000000 -k output/o_poly_GB.cXX.txt\n";
+		}
+		$pm->finish;
+	}
+}
+$pm->wait_all_children;
+```
+
+I summarized the results from the chains, see [calpost.pl](calpost.pl) and [grabPips.pl](grabPips.pl), and then summarized the mapping analysis in R [summarizeGwaPoly.R](summarizeGwaPoly.R).
+
+I next repeated all of the above (but with subsetting first) for GR8.06. See [FormatPhenoGR8.R](FormatPhenoGR8.R), [GetHetPdataGR8.R](GetHetPdataGR8.R), [SubSetHetGenoGR8.R](SubSetHetGenoGR8.R), [summarizeGwaGR.R](summarizeGwaGR.R), [grabPipsGR8.pl](grabPipsGR8.pl) and [summarizeGwaPolyGR.R](summarizeGwaPolyGR.R). 
+
+I put all of the figures we have so far on [google drive folder](https://drive.google.com/drive/folders/1eIxAUx4Up3Opkr4DiMcKhPcZjayXjwke?usp=sharing). The file names denote the population (GR8 for GR8.06 and 2019 for Horse Flats), the analysis (SSNP = single SNP LMM vs poply = BSLMM), the trait (GB or GR) and whether the plot is for the whole genome (nothing extra in the name) or just chromosome 8 (Ch8). All combinations of these are included for 16 plots (files total).
+
+We see fairly similar results in both populations. PVEs (with CIs) are: Horse Flats, RG = 0.75 (0.57-0.92), GB = 0.63 (0.47-0.82); GR8.06, RG = 0.72 (0.60-0.91), GB = 0.60 (0.48-0.76). In both cases the color traits are highly heritable, with slightly higher heritability for RG than GB and similar values in each population.
+
+In all cases we see a clear signal on chromosome 8. There is generally more noise off of 8 (sometimes quite a bit) with the single SNP analyses than the polygenic analyses. In the polygenic analyses, we get a modest number of SNPs with non-trivial PIPs (more details below). For GB in both populations, the signal in the polygenic analyses is very much restricted to chromosome 8. For RG, there is a clear signal on 8 in the polygenic models, but also something going on with chromosome 1 (both populations) with other more modest signals elsewhere.
+
+The overall (total) number of sparse effects (QTN) from gemma is modest and exhibits uncertainty (of course) but not to a crazy extent: Horse Flats, RG = 18 (8-39), GB = 15 (5-53); GR8.06, RG = 10 (7-18), GB = 12 (3-35). Interestingly, there is some evidence that sparse effects matter more for GR8.06 than Horse Flats, though it isn't whopping, based on PGE (proportion of PVE due to sparse effects): Horse Flats, RG = 0.79 (0.60-0.96), GB = 0.77 (0.54-0.97); GR8.06, RG = 0.88 (0.70-0.99), GB = 0.90 (0.70-0.99). This combined with the slightly lower estimates of number of QTN point towards a marginally more concentrated (less polygenic) genetic basis for color at GR8.06 than Horse Flats. The SNPs with the highest PIPs are not the same for RG and GB, but, at least on chromosome 8, they are in the same general region (don't know about gene level yet), at least for the ones with the strongest signal. It also looks like, especially when thinking about RG and GB, we get a few distinct, but nearby peaks. This is all generally consistent with the NEE paper.
+
+
 ## Chromosome 8 SV calling with SyRI
 
 I am using `SyRI` (version 1.8.2) to call structural variants on chromosome 8 based on the 10 phased genomes. This is really a pairwise analysis and requires a designated referene genome. I am using the same two genomes as references that I used for the re-analysis:  24_0159h1 (a melanic *T. chumash*) and 24_0163h1 (a green *T. chumash*) and aligning each to all of the others. I am doing this with and without masking. The reason for using `SyRI` is that it defines breakpoints and SV types in a pretty clear and explicit manner. See [Goel et al. 2019](https://link.springer.com/article/10.1186/s13059-019-1911-0) for a description of the method, as well as [the GitHub page](https://github.com/schneebergerlab/syri) for the software.
@@ -1027,7 +1237,6 @@ perl BcfForkLg.pl chrom*list
 #
 # samtools/bcftools variant calling by LG 
 #
-
 
 use Parallel::ForkManager;
 my $max = 10;
