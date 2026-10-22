@@ -869,15 +869,84 @@ I summarized the results from these model fits see: [calpost.pl](calpost.pl), [g
 
 !!NOTE TEXT BELOW NEEDS UPDATED STILL!!
 
-I next repeated all of the above (but with subsetting first) for GR8.06. See [FormatPhenoGR8.R](FormatPhenoGR8.R), [GetHetPdataGR8.R](GetHetPdataGR8.R), [SubSetHetGenoGR8.R](SubSetHetGenoGR8.R), [summarizeGwaGR.R](summarizeGwaGR.R), [grabPipsGR8.pl](grabPipsGR8.pl) and [summarizeGwaPolyGR.R](summarizeGwaPolyGR.R). 
-
-I put all of the figures we have so far on [google drive folder](https://drive.google.com/drive/folders/1eIxAUx4Up3Opkr4DiMcKhPcZjayXjwke?usp=sharing). The file names denote the population (GR8 for GR8.06 and 2019 for Horse Flats), the analysis (SSNP = single SNP LMM vs poply = BSLMM), the trait (GB or GR) and whether the plot is for the whole genome (nothing extra in the name) or just chromosome 8 (Ch8). All combinations of these are included for 16 plots (files total).
+I next repeated the GWA mapping for GR8.06. See [FormatPhenoGR8.R](FormatPhenoGR8.R), [GetHetPdataGR8.R](GetHetPdataGR8.R), [SubSetHetGenoGR8.R](SubSetHetGenoGR8.R), [summarizeGwaGR.R](summarizeGwaGR.R), [grabPipsGR8.pl](grabPipsGR8.pl) and [summarizeGwaPolyGR.R](summarizeGwaPolyGR.R). 
 
 We see fairly similar results in both populations. PVEs (with CIs) are: Horse Flats, RG = 0.75 (0.57-0.92), GB = 0.63 (0.47-0.82); GR8.06, RG = 0.72 (0.60-0.91), GB = 0.60 (0.48-0.76). In both cases the color traits are highly heritable, with slightly higher heritability for RG than GB and similar values in each population.
 
 In all cases we see a clear signal on chromosome 8. There is generally more noise off of 8 (sometimes quite a bit) with the single SNP analyses than the polygenic analyses. In the polygenic analyses, we get a modest number of SNPs with non-trivial PIPs (more details below). For GB in both populations, the signal in the polygenic analyses is very much restricted to chromosome 8. For RG, there is a clear signal on 8 in the polygenic models, but also something going on with chromosome 1 (both populations) with other more modest signals elsewhere.
 
 The overall (total) number of sparse effects (QTN) from gemma is modest and exhibits uncertainty (of course) but not to a crazy extent: Horse Flats, RG = 18 (8-39), GB = 15 (5-53); GR8.06, RG = 10 (7-18), GB = 12 (3-35). Interestingly, there is some evidence that sparse effects matter more for GR8.06 than Horse Flats, though it isn't whopping, based on PGE (proportion of PVE due to sparse effects): Horse Flats, RG = 0.79 (0.60-0.96), GB = 0.77 (0.54-0.97); GR8.06, RG = 0.88 (0.70-0.99), GB = 0.90 (0.70-0.99). This combined with the slightly lower estimates of number of QTN point towards a marginally more concentrated (less polygenic) genetic basis for color at GR8.06 than Horse Flats. The SNPs with the highest PIPs are not the same for RG and GB, but, at least on chromosome 8, they are in the same general region (don't know about gene level yet), at least for the ones with the strongest signal. It also looks like, especially when thinking about RG and GB, we get a few distinct, but nearby peaks. This is all generally consistent with the NEE paper.
+
+!!!! UPDATE ABOVE ONCE WE HAVE UPDATED GR8 results!!!
+
+## Delimiting the color-associated region
+
+The general pattern from the GWA suggested a series of color-associated peaks spanning 3-5 Mbp region (depending on the genome and what one considers a peak). I will say more about the troughs between peaks below but briefly they are NOT regions riddeled with Ns or anything like that, but they are regions where the density of SNPs is low.
+
+I used an objective and automated approach for segmenting the association signal into a series of distinct regions; this is controlled by a few tuning parameters. My general plan is to replicate core analyses across different tuning parameters to assess the robustness of these results to different definctions of regions/tuning parameters. I searched the whole of chromosome 8 for color-associated peaks. First, I smoothed the association signal by computing the median negative log10 p-value from the association tests in 200 or 300 kb sliding windows (with window step sizes of 10 kb) (see the `smoothSignal` function). This was done on the combined RG and GB association signals. I then searched for peaks in the smoothed signal. For this, outlier (peak) windows were first defined as those with smoothed P-values some threshohold above the median (0.5, 0.75 or 1 negative log10 units). Neighboring windows were combined into distinct peaks, first if they were completely contiguous and then further if they were seperated (at the edges) by fewer the *minSep* bps (100 kb, 200 kb or 300 kb). Lastly, these putative peaks were pruned removing those with sizes less than *minSz* (100 kb, 200 kb, 300 kb or 400 kb). I ran 23 combinations of these tunning parameters each of the two genome assemblies. 
+
+The code for this is also in [Gwa_green.R](Gwa_green.R) and [Gwa_red.R](Gwa_red.R), that is, the GWA summary scripts mentioned above (for the standard LMMs).
+
+Here are the regions I identified.
+
+Green genome asembly:
+
+| smooth_win_sz | threshold | min_size | min_sep | num_windows | window1_lb | window1_ub | window2_lb | window2_ub | window3_lb | window3_ub | window4_lb | window4_ub |
+|---------------|-----------|----------|---------|-------------|------------|------------|------------|------------|------------|------------|------------|------------|
+| 200kb         | 0.5       | 200kb    | 200kb   | 3           | 60040001   | 61640001   | 62480001   | 63860001   | 64490001   | 64890001   |            |            |
+| 200kb         | 0.75      | 200kb    | 200kb   | 3           | 60090001   | 61640001   | 62480001   | 63230001   | 64490001   | 64800001   |            |            |
+| 200kb         | 1         | 200kb    | 200kb   | 3           | 60160001   | 60970001   | 62480001   | 63150001   | 64490001   | 64760001   |            |            |
+| 200kb         | 0.5       | 400kb    | 300kb   | 3           | 60040001   | 61830001   | 62450001   | 63880001   | 64490001   | 64890001   |            |            |
+| 200kb         | 0.75      | 400kb    | 300kb   | 2           | 60090001   | 61640001   | 62480001   | 63460001   |            |            |            |            |
+| 200kb         | 1         | 400kb    | 300kb   | 2           | 60160001   | 60970001   | 62480001   | 63460001   |            |            |            |            |
+| 200kb         | 0.5       | 300kb    | 300kb   | 3           | 60040001   | 61830001   | 62450001   | 63880001   | 64490001   | 64890001   |            |            |
+| 200kb         | 0.75      | 300kb    | 300kb   | 3           | 60090001   | 61640001   | 62480001   | 63460001   | 64490001   | 64800001   |            |            |
+| 200kb         | 1         | 300kb    | 300kb   | 2           | 60160001   | 60970001   | 62480001   | 63460001   |            |            |            |            |
+| 200kb         | 0.5       | 100kb    | 100kb   | 4           | 60040001   | 61640001   | 62450001   | 63280001   | 63440001   | 63880001   | 64490001   | 64890001   |
+| 200kb         | 0.75      | 100kb    | 100kb   | 4           | 60090001   | 61330001   | 61440001   | 61640001   | 62480001   | 63230001   | 64490001   | 64800001   |
+| 200kb         | 1         | 100kb    | 100kb   | 4           | 60160001   | 60320001   | 60420001   | 60700001   | 62480001   | 63150001   | 64490001   | 64760001   |
+| 300kb         | 0.5       | 200kb    | 200kb   | 3           | 60050001   | 61690001   | 62430001   | 63880001   | 64440001   | 64860001   |            |            |
+| 300kb         | 0.75      | 200kb    | 200kb   | 3           | 60100001   | 61600001   | 62430001   | 63280001   | 64440001   | 64760001   |            |            |
+| 300kb         | 1         | 200kb    | 200kb   | 3           | 60250001   | 61020001   | 62430001   | 63160001   | 64510001   | 64710001   |            |            |
+| 300kb         | 0.5       | 400kb    | 300kb   | 3           | 60050001   | 61690001   | 62430001   | 63880001   | 64440001   | 64860001   |            |            |
+| 300kb         | 0.75      | 400kb    | 300kb   | 2           | 60100001   | 61600001   | 62430001   | 63280001   |            |            |            |            |
+| 300kb         | 1         | 400kb    | 300kb   | 2           | 60250001   | 61020001   | 62430001   | 63160001   |            |            |            |            |
+| 300kb         | 0.5       | 300kb    | 300kb   | 3           | 60050001   | 61690001   | 62430001   | 63880001   | 64440001   | 64860001   |            |            |
+| 300kb         | 0.75      | 300kb    | 300kb   | 3           | 60100001   | 61600001   | 62430001   | 63280001   | 64440001   | 64760001   |            |            |
+| 300kb         | 1         | 300kb    | 300kb   | 2           | 60250001   | 61020001   | 62430001   | 63160001   |            |            |            |            |
+| 300kb         | 0.5       | 100kb    | 100kb   | 4           | 60050001   | 61690001   | 62430001   | 63330001   | 63630001   | 63880001   | 64440001   | 64860001   |
+| 300kb         | 0.75      | 100kb    | 100kb   | 4           | 60100001   | 61200001   | 61300001   | 61600001   | 62430001   | 63280001   | 64440001   | 64760001   |
+| 300kb         | 1         | 100kb    | 100kb   | 3           | 60250001   | 60810001   | 62430001   | 63160001   | 64510001   | 64710001   |            |            |
+
+Red genome assembly:
+
+| smooth_win_sz | threshold | min_size | min_sep | num_windows | window1_lb | window1_ub | window2_lb | window2_ub | window3_lb | window3_ub |
+|---------------|-----------|----------|---------|-------------|------------|------------|------------|------------|------------|------------|
+| 200kb         | 0.5       | 200kb    | 200kb   | 2           | 60690001   | 62040001   | 62820001   | 63890001   |            |            |
+| 200kb         | 0.75      | 200kb    | 200kb   | 2           | 60720001   | 62010001   | 62830001   | 63790001   |            |            |
+| 200kb         | 1         | 200kb    | 200kb   | 3           | 60780001   | 61740001   | 62850001   | 63160001   | 63380001   | 63760001   |
+| 200kb         | 0.5       | 400kb    | 300kb   | 2           | 60690001   | 62390001   | 62820001   | 63890001   |            |            |
+| 200kb         | 0.75      | 400kb    | 300kb   | 2           | 60720001   | 62260001   | 62830001   | 63790001   |            |            |
+| 200kb         | 1         | 400kb    | 300kb   | 2           | 60780001   | 61740001   | 62850001   | 63760001   |            |            |
+| 200kb         | 0.5       | 300kb    | 300kb   | 2           | 60690001   | 62390001   | 62820001   | 63890001   |            |            |
+| 200kb         | 0.75      | 300kb    | 300kb   | 2           | 60720001   | 62260001   | 62830001   | 63790001   |            |            |
+| 200kb         | 1         | 300kb    | 300kb   | 2           | 60780001   | 61740001   | 62850001   | 63760001   |            |            |
+| 200kb         | 0.5       | 100kb    | 100kb   | 3           | 60690001   | 62040001   | 62240001   | 62390001   | 62820001   | 63890001   |
+| 200kb         | 0.75      | 100kb    | 100kb   | 2           | 60720001   | 62010001   | 62830001   | 63790001   |            |            |
+| 200kb         | 1         | 100kb    | 100kb   | 3           | 60780001   | 61740001   | 62850001   | 63160001   | 63380001   | 63760001   |
+| 300kb         | 0.5       | 200kb    | 200kb   | 2           | 60680001   | 62090001   | 62780001   | 63860001   |            |            |
+| 300kb         | 0.75      | 200kb    | 200kb   | 2           | 60740001   | 61960001   | 62790001   | 63760001   |            |            |
+| 300kb         | 1         | 200kb    | 200kb   | 3           | 60790001   | 61780001   | 62820001   | 63100001   | 63330001   | 63730001   |
+| 300kb         | 0.5       | 400kb    | 300kb   | 2           | 60680001   | 62340001   | 62780001   | 63860001   |            |            |
+| 300kb         | 0.75      | 400kb    | 300kb   | 2           | 60740001   | 61960001   | 62790001   | 63760001   |            |            |
+| 300kb         | 1         | 400kb    | 300kb   | 2           | 60790001   | 61780001   | 62820001   | 63730001   |            |            |
+| 300kb         | 0.5       | 300kb    | 300kb   | 2           | 60680001   | 62340001   | 62780001   | 63860001   |            |            |
+| 300kb         | 0.75      | 300kb    | 300kb   | 2           | 60740001   | 61960001   | 62790001   | 63760001   |            |            |
+| 300kb         | 1         | 300kb    | 300kb   | 2           | 60790001   | 61780001   | 62820001   | 63730001   |            |            |
+| 300kb         | 0.5       | 100kb    | 100kb   | 2           | 60680001   | 62090001   | 62780001   | 63860001   |            |            |
+| 300kb         | 0.75      | 100kb    | 100kb   | 2           | 60740001   | 61960001   | 62790001   | 63760001   |            |            |
+| 300kb         | 1         | 100kb    | 100kb   | 3           | 60790001   | 61780001   | 62820001   | 63100001   | 63330001   | 63730001   |
+|               |           |          |         |             |            |            |            |            |            |            |
 
 
 ## Chromosome 8 SV calling with SyRI
