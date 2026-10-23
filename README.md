@@ -949,6 +949,10 @@ Red genome assembly:
 |               |           |          |         |             |            |            |            |            |            |            |
 
 
+## Genetic analyses of color-associated regions
+
+I summarized LD for pairs of SNPs across the color associated regions (for the green genome assembly). I looked across the entirety of the associated region and a bit beyond. This is actually part of [mkFigure3.R](mkFigure3.R). This script also contains a PCA for the three regions defined from the first set of tunning parameters for the green genome. I then We next tested for associations between PC scores for each genomic region and the RG and GB color traits. I first calculated Pearson correlations between PCs 1 and 2 from each region and each color trait. I then jointly analyzed all six PC variables (PCs 1 and 2 from each of the three regions) using linear regression with Bayesian model averaging, as implemented in the `R` package `BMS` (version 0.3.5). For each color trait, I fit Bayesian models using Markov chain Monte Carlo (MCMC) with the MC3 sampler, a burn-in of 10,000 iterations followed by 200,000 sampling iterations, a uniform model prior, and the UIP hyperprior for Zellner's g-prior on the regression coefficients. See [pcLMs.R](pcLMs.R).
+
 ## Chromosome 8 SV calling with SyRI
 
 I am using `SyRI` (version 1.8.2) to call structural variants on chromosome 8 based on the 10 phased genomes. This is really a pairwise analysis and requires a designated referene genome. I am using the same two genomes as references that I used for the re-analysis:  24_0159h1 (a melanic *T. chumash*) and 24_0163h1 (a green *T. chumash*) and aligning each to all of the others. I am doing this with and without masking. The reason for using `SyRI` is that it defines breakpoints and SV types in a pretty clear and explicit manner. See [Goel et al. 2019](https://link.springer.com/article/10.1186/s13059-019-1911-0) for a description of the method, as well as [the GitHub page](https://github.com/schneebergerlab/syri) for the software.
