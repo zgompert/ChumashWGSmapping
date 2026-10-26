@@ -795,6 +795,8 @@ gemma -g  $gfile -p $pfile -k output/$of.cXX.txt -lmm 4 -n 2 -o $of -maf 0
 
 These analyses were summarized and examined with [Gwa_green.R](Gwa_green.R) and [Gwa_red.R](Gwa_red.R).
 
+For analogous results from GR8 (the second population) see: [FormatPhenoGR8.R](FormatPhenoGR8.R), [GetHetPdata_GR8.R](GetHetPdata_GR8.R), [SubSetHetGeno_GR8.R](SubSetHetGeno_GR8.R), [gwaGR8_summaryfig.R](gwaGR8_summaryfig.R), and [RunGemma_GR8.sh](RunGemma_GR8.sh)
+
 Next, I ran the BSLMM as well. I did this at different scales: whole genome, chromosome 8, and the color-associated region of chromosome 8 (more on that below).
 
 ```bash
