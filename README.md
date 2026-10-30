@@ -1058,11 +1058,7 @@ Key command options are `-ax asm5` which species the sequence divergence and `--
 
 The main tabular SV output from `SyRI` are the *out files. The format is described [here](https://schneebergerlab.github.io/syri/fileformat.html). This includes information on SVs and alignments within SVs. HDRs are highly divergent regions that did not align. These could be interesting and can be output (in terms of sequence) by `SyRI` with a command line option. The plots from `plotsr` are in the same result directory. A few notes on these: (i) the bigger Ch8 inversion seems to obscure other SV when present, (ii) the focal color region from the GWA (about 60-65 Mbps for the two reference genomes) contains multiple called SV, including a good sized inversion and what I think are smaller duplications and translocations from elewhere on Ch8 (clearly relevant for ideas about aggregation of loci in supergenes), and (iii) the region contains a number of HDRs. 
 
-My next step is to really overlap the SV calls (summarize in `R` from the *out files) and overlay them on the GWA plots to see how these signals really line up. A few notes additional notes for next time
-
-- I am not quite sure what an inverted alignment relative to an inversion looks like in `SyRI` (is it then syntenic); this is relevant for how we call the SV (I mostly want it relative to whatever the main orientation is.
-- What is the bigger Ch8 inversion doing to recombination.
-- Do I want/need to cluster SV, or is it better to think of them separately. I saw some sort of graph-based approach for SV clustering that I think is new. I want to look into this at least.
+I then summarized the SV calls for our focal regions of chromosome 8 in R, see [SummarizeSyri.R](SummarizeSyri.R) and [SummarizeSyri_red.R](SummarizeSyri_red.R).
 
 ## Pangome for SV visualization
 
