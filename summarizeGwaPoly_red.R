@@ -65,6 +65,21 @@ sum(pips[resRG[,1]==4 & resRG[,2] > r1lb & resRG[,2] < r2ub])
 #[1] 1.062892
 pipsRG<-pips
 
+nr<-dim(reg_red)[1]
+pipRG_region<-rep(NA,nr)
+for(k in 1:nr){
+        sp<-rep(NA,reg_red$num_windows[k])
+        for(a in 1:reg_red$num_windows[k]){
+                b<-(a-1)*2
+                lb<-reg_red[k,6+b]
+                ub<-reg_red[k,7+b]
+                sp[a]<-sum(pips[resRG[,1]==4 & resRG[,2] > lb & resRG[,2] < ub])
+        }
+        pipRG_region[k]<-sum(sp)
+}
+
+
+
 
 ## read gwa results for GB
 resGB<-fread("output/pips_o_poly_bslmm_red_ph2_ch0.param.txt",header=FALSE)
@@ -123,6 +138,20 @@ sum(pips[resGB[,1]==4 & resGB[,2] > r1lb & resGB[,2] < r2ub])
 #2.109506
 pipsGB<-pips
 
+nr<-dim(reg_red)[1]
+pipGB_region<-rep(NA,nr)
+for(k in 1:nr){
+        sp<-rep(NA,reg_red$num_windows[k])
+        for(a in 1:reg_red$num_windows[k]){
+                b<-(a-1)*2
+                lb<-reg_red[k,6+b]
+                ub<-reg_red[k,7+b]
+                sp[a]<-sum(pips[resGB[,1]==4 & resGB[,2] > lb & resGB[,2] < ub])
+        }
+        pipGB_region[k]<-sum(sp)
+}
+
+
 ## number of QTL total
 sum(pipsGB[resGB[,1]==4 & resGB[,2] > r1lb & resGB[,2] < r1ub]) + sum(pipsRG[resRG[,1]==4 & resRG[,2] > r1lb & resRG[,2] < r1ub]) - sum(pipsGB[resGB[,1]==4 & resGB[,2] > r1lb & resGB[,2] < r1ub] * pipsRG[resRG[,1]==4 & resRG[,2] > r1lb & resRG[,2] < r1ub])
 #[1] 2.181588 
@@ -130,3 +159,17 @@ sum(pipsGB[resGB[,1]==4 & resGB[,2] > r2lb & resGB[,2] < r2ub]) + sum(pipsRG[res
 #[1] 0.9905177
 sum(pipsGB[resGB[,1]==4 & resGB[,2] > r1lb & resGB[,2] <r2ub]) + sum(pipsRG[resRG[,1]==4 & resRG[,2] > r1lb & resRG[,2] < r2ub]) - sum(pipsGB[resGB[,1]==4 & resGB[,2] > r1lb & resGB[,2] < r2ub] * pipsRG[resRG[,1]==4 & resRG[,2] > r1lb & resRG[,2] < r2ub])
 #[1] 3.172344
+
+summary(pipRG_region)
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+#  1.047   1.060   1.060   1.059   1.062   1.063 
+summary(pipGB_region)
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+#  1.188   1.543   2.089   1.855   2.109   2.111 
+
+pdf("sfig_qtn_red.pdf",width=5,height=5)
+par(mar=c(4.5,5.5,2.5,1.5))
+plot(pipRG_region,pipGB_region,pch=19,col=alpha("gray30",.5),xlab="Number of QTN RG",ylab="Number of QTN GB",cex.lab=1.3,cex.axis=1)
+title(main="(b) Red genome (24_0159H1)",cex.main=1.3)
+dev.off()
+

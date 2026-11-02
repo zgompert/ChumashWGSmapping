@@ -69,6 +69,18 @@ sum(pips[resRG[,1]==4 & resRG[,2] > r1lb & resRG[,2] < r3ub])
 #[1] 2.103527
 pipsRG<-pips
 
+nr<-dim(reg_green)[1]
+pipRG_region<-rep(NA,nr)
+for(k in 1:nr){
+	sp<-rep(NA,reg_green$num_windows[k])
+	for(a in 1:reg_green$num_windows[k]){
+		b<-(a-1)*2
+		lb<-reg_green[k,6+b]
+		ub<-reg_green[k,7+b]
+		sp[a]<-sum(pips[resRG[,1]==4 & resRG[,2] > lb & resRG[,2] < ub])
+	}
+	pipRG_region[k]<-sum(sp)
+}
 
 ## read gwa results for GB
 resGB<-fread("output/pips_o_poly_bslmm_green_ph2_ch0.param.txt",header=FALSE)
@@ -131,6 +143,21 @@ sum(pips[resGB[,1]==4 & resGB[,2] > r3lb & resGB[,2] < r3ub])
 sum(pips[resGB[,1]==4 & resGB[,2] > r1lb & resGB[,2] < r3ub])
 pipsGB<-pips
 
+nr<-dim(reg_green)[1]
+pipGB_region<-rep(NA,nr)
+for(k in 1:nr){
+        sp<-rep(NA,reg_green$num_windows[k])
+        for(a in 1:reg_green$num_windows[k]){
+                b<-(a-1)*2
+                lb<-reg_green[k,6+b]
+                ub<-reg_green[k,7+b]
+                sp[a]<-sum(pips[resGB[,1]==4 & resGB[,2] > lb & resGB[,2] < ub])
+        }
+        pipGB_region[k]<-sum(sp)
+}
+
+
+
 ## number of QTL total
 sum(pipsGB[resGB[,1]==4 & resGB[,2] > r1lb & resGB[,2] < r1ub]) + sum(pipsRG[resRG[,1]==4 & resRG[,2] > r1lb & resRG[,2] < r1ub]) - sum(pipsGB[resGB[,1]==4 & resGB[,2] > r1lb & resGB[,2] < r1ub] * pipsRG[resRG[,1]==4 & resRG[,2] > r1lb & resRG[,2] < r1ub])
 #[1] 2.881533 
@@ -141,68 +168,16 @@ sum(pipsGB[resGB[,1]==4 & resGB[,2] > r3lb & resGB[,2] < r3ub]) + sum(pipsRG[res
 sum(pipsGB[resGB[,1]==4 & resGB[,2] > r1lb & resGB[,2] < r3ub]) + sum(pipsRG[resRG[,1]==4 & resRG[,2] > r1lb & resRG[,2] < r3ub]) - sum(pipsGB[resGB[,1]==4 & resGB[,2] > r1lb & resGB[,2] < r3ub] * pipsRG[resRG[,1]==4 & resRG[,2] > r1lb & resRG[,2] < r3ub])
 #[1] 4.273493
 
-### ANNOTATION NOT DONE #####
 
-## check annotation for SNPs with pips > X
-gtf<-read.table("/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/Annotation/t_chumash/braker/braker.gtf",header=FALSE,fill=TRUE)
+summary(pipRG_region)
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#  1.174   1.865   2.042   1.936   2.102   2.103 
+summary(pipGB_region)
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#  1.428   2.084   2.152   2.073   2.162   2.162
 
-genes<-which(gtf$V3=="gene")
-CDS<-which(gtf$V3=="CDS")
-
-chromtab<-read.table("ChromLookUp.txt",header=FALSE)
-
-
-## RG
-resRG<-as.matrix(fread("SNPsRG_sub.txt",header=FALSE))
-pips<-as.numeric(resRG$V2)
-pip10<-which(pips > .1)
-resRG[pip10,]
-#      V1        V2
-# [1,]  1 731095677
-# [2,]  1 732566323
-# [3,]  1 771077484
-# [4,]  1 781206805
-# [5,]  7  70200596
-# [6,]  7  75600304
-# [7,]  8  59330221
-# [8,]  8  59587922
-# [9,]  8  59630464
-#[10,]  8 136007084
-#[11,] 13  32771453
-
-
-RGinGene<-rep(NA,length(pip10))
-for(i in 1:length(pip10)){
-	ch<-chromtab[chromtab[,1]==resRG[pip10][i],2]
-	xx<-which(gtf[genes,1]==ch & resRG[pip10,2][i] > gtf[genes,4] & resRG[pip10,2][i] < gtf[genes,5])
-	if(length(xx)>=1){
-		RGinGene[i]<-gtf[genes[xx],9]
-	}
-}
-## SNP 2 (1, 732566323) = g15738 = Proteasome-substrate-size regulator, mid region
-## SNP 11 (13, 32771453) = g3312 = PH domain
-
-## GB
-resGB<-resRG
-pips<-as.numeric(resGB$V2)
-pip10<-which(pips > .1)
-resGB[pip10,]
-#      V1        V2
-#[1,]  8 56786125
-#[2,]  8 59330149
-#[3,]  8 59592931
-#[4,]  8 59695850
-
-
-GBinGene<-rep(NA,length(pip10))
-for(i in 1:length(pip10)){
-	ch<-chromtab[chromtab[,1]==resGB[pip10][i],2]
-	xx<-which(gtf[genes,1]==ch & resGB[pip10,2][i] > gtf[genes,4] & resGB[pip10,2][i] < gtf[genes,5])
-	if(length(xx)>=1){
-		GBinGene[i]<-gtf[genes[xx],9]
-	}
-}
-## SNP 1 (8, 56786125) in g407 and g408 = RNA polymerage III and UBX domain
-
-
-
+pdf("sfig_qtn_green.pdf",width=5,height=5)
+par(mar=c(4.5,5.5,2.5,1.5))
+plot(pipRG_region,pipGB_region,pch=19,col=alpha("gray30",.5),xlab="Number of QTN RG",ylab="Number of QTN GB",cex.lab=1.3,cex.axis=1)
+title(main="(a) Green genome (24_0163H1)",cex.main=1.3)
+dev.off()
