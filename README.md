@@ -951,13 +951,13 @@ I also looked at local PCA structure across all of chromosome 8, including the c
 
 ## Testing for increased LD during a release-recapture experiment
 
-I wanted to know whether the LD among the color associated regions increased in the survivors on AC relative to the starting conditions, and likewise, whether this was not true for MM. For this, I summarized LD using PCAs of the color-associated regions. The analyses are in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gemma_rev`. Unlike my initial version of these analyses (see old results below), I included tests that consider each PC axis independently (as I did originally) and a multivariate approach that considers multiple axes together (the latter was suggested by a reviewer of the initial paper, and is, I think, a nice addition). For the single PC axis analyses, I tested for increased LD realtive to null expectations (from random mortality or linear selection on RG or GB) using each of the region definitions noted above; I also tested for increased LD within regions (between each regions PC1 and PC2), among regions (all pairs of PCs from different regions) and both combined. See the following scripts: [change_withinregs_PCAGwa.R](change_withinregs_PCAGwa.R), [change_betweenregs_PCAGwa.R](change_betweenregs_PCAGwa.R), and [change_regs_PCAGwa.R](change_regs_PCAGwa.R), with functions defined in [changeFunction_within.R](changeFunction_within.R), [changeFunction_between.R](changeFunction_between.R), and [changeFunction.R](changeFunction.R). 
+I wanted to know whether the LD among the color associated regions increased in the survivors on AC relative to the starting conditions, and likewise, whether this was not true for MM. For this, I summarized LD using PCAs of the color-associated regions. The analyses are in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/gemma_rev`. Unlike my initial version of these analyses (see old results below), I included tests that consider each PC axis independently (as I did originally) and a multivariate approach that considers multiple axes together (the latter was suggested by a reviewer of the initial paper, and is, I think, a nice addition). For the single PC axis analyses, I tested for increased LD relative to null expectations (from random mortality or linear selection on RG or GB) using each of the region definitions noted above; I also tested for increased LD within regions (between each regions PC1 and PC2), among regions (all pairs of PCs from different regions) and both combined. See the following scripts: [change_withinregs_PCAGwa.R](change_withinregs_PCAGwa.R), [change_betweenregs_PCAGwa.R](change_betweenregs_PCAGwa.R), and [change_regs_PCAGwa.R](change_regs_PCAGwa.R), with functions defined in [changeFunction_within.R](changeFunction_within.R), [changeFunction_between.R](changeFunction_between.R), and [changeFunction.R](changeFunction.R). 
 
 For the multivariate approach, I used the RV coefficient, which is essentially multivariate (matrix) extension of a traditional correlation. For this, the matrixes are the PCs of regions; instead of then computing correlations between pairs of PCs, one computes the RV coefficient for some number of PCs collectively (k, I used k = 1 to 6; I expect the biggest signal at k=2 as that is where the SV really pop in the PCA scatterplots, i.e., the first two axes). See [Josse et al. 2008](https://www.sciencedirect.com/science/article/abs/pii/S0167947308003186), [Dray, 2008](https://www.sciencedirect.com/science/article/abs/pii/S0167947307002939) and [Josse & Holmes, 2016](https://pmc.ncbi.nlm.nih.gov/articles/PMC5658146/) for background on this approach. Here is the code for this analyses: [change_regs_PCAGwa_RV.R](change_regs_PCAGwa_RV.R) [changeFunctionRV.R](changeFunctionRV.R) and [changeFunctionRVmod.R](changeFunctionRVmod.R). 
 
 ## Testing the fitness effects of increasing or decreasing LD 
 
-I next looked at the effect of LD among color-associated SNPs on expected fitness on MM and A/C for the 2019 study population (HFS). This is an update and extension of my inifial analysis documented in the old results below. I first predicted color (RG and GB) from the gemma results (observed). I then altered LD among top PIP SNPs in one of two ways (top PIP SNPs were defined as those having PIPs greater than 0.05, 0.075 or 0.1 for either color trait). First, to get minimum LD among these SNPs, I sampled genotypes for individuals independnetly at the 15 loci assuming HWE and LE (that is, binomial sampling based only on allele frequencies). Second, to maximize (or at least increase) LD, I used k-means clustering to divide the individuals based on color phenotype (two groups), and then, for each locus, I maximized the allele frequency difference between clusters under the constraint of not altering the allele frequency for both together (basically maximizing genetic differentiation without changing allele frequency  of the high PIP SNPs). I then sampled genotypes for each locus and individual using the allele counts from the relevant cluster/group (this preserved allele frequencies/counts precisely). Note that I sampled genotypes in such a way as to ensure that invididuals with more extreme predicted color scores without a given high PIP SNP received the more extreme genotypes for a given high PIP SNP. This thus maximizes both differences between clusters and LD within clusters. Lastly, I caclulated the expected fitness of each individual under the selection gradient models (linear, quadratic and linear correlational selection) from [Nosil et al. 2020](https://www.proquest.com/docview/2473271380?pq-origsite=gscholar&fromopenview=true&sourcetype=Scholarly%20Journals). To do this, I tooks samples from the Bayesian posterior for the higher-level (alpha in the model) selection gradient parameters (as oppossed to block-level parameters). I based on my final inferences on 1000  total samples from the posterior spread over 50 different genotype sampling iterations (20 each). I then computed mean fitness for: (i) observed vs minimum LD = *ran*, (ii) maximum vs observed LD = *max*, and (iii) maximim vs minimum LD = *ext*. I did this for both focal genomes. I refer to this as the *sort* approach. I took a second complementary approach to maximimze and minimize LD. For this second (arguably simpler) approach, which I refer to as the *shift* approach. This followed the first method, except I computed the expected mean change in color scores differences between clusters based on maximizing allele frequency differences and then added or subtracted (depending on the cluster) the expected change to the predicted color scores. This preserves background LD while applying the effect of creating differentiated clusters.
+I next looked at the effect of LD among color-associated SNPs on expected fitness on MM and A/C for the 2019 study population (HFS). This is an update and extension of my initial analysis documented in the old results below. I first predicted color (RG and GB) from the gemma results (observed). I then altered LD among top PIP SNPs in one of two ways (top PIP SNPs were defined as those having PIPs greater than 0.05, 0.075 or 0.1 for either color trait). First, to get minimum LD among these SNPs, I sampled genotypes for individuals independnetly at the 15 loci assuming HWE and LE (that is, binomial sampling based only on allele frequencies). Second, to maximize (or at least increase) LD, I used k-means clustering to divide the individuals based on color phenotype (two groups), and then, for each locus, I maximized the allele frequency difference between clusters under the constraint of not altering the allele frequency for both together (basically maximizing genetic differentiation without changing allele frequency  of the high PIP SNPs). I then sampled genotypes for each locus and individual using the allele counts from the relevant cluster/group (this preserved allele frequencies/counts precisely). Note that I sampled genotypes in such a way as to ensure that individuals with more extreme predicted color scores without a given high PIP SNP received the more extreme genotypes for a given high PIP SNP. This thus maximizes both differences between clusters and LD within clusters. Lastly, I calculated the expected fitness of each individual under the selection gradient models (linear, quadratic and linear correlational selection) from [Nosil et al. 2020](https://www.proquest.com/docview/2473271380?pq-origsite=gscholar&fromopenview=true&sourcetype=Scholarly%20Journals). To do this, I took samples from the Bayesian posterior for the higher-level (alpha in the model) selection gradient parameters (as opposed to block-level parameters). I based on my final inferences on 1000  total samples from the posterior spread over 50 different genotype sampling iterations (20 each). I then computed mean fitness for: (i) observed vs minimum LD = *ran*, (ii) maximum vs observed LD = *max*, and (iii) maximum vs minimum LD = *ext*. I did this for both focal genomes. I refer to this as the *sort* approach. I took a second complementary approach to maximize and minimize LD. For this second (arguably simpler) approach, which I refer to as the *shift* approach. This followed the first method, except I computed the expected mean change in color scores differences between clusters based on maximizing allele frequency differences and then added or subtracted (depending on the cluster) the expected change to the predicted color scores. This preserves background LD while applying the effect of creating differentiated clusters.
 
 The take home is the LD does more in A/C than MM and we have more credible evidence for an actual beneficial effect of LD in A/C than MM. The scripts for generating the genomic predictions of fitness using the sorting approach and phenotypic shifting are: [PredictCh8_shift_green.R](PredictCh8_shift_green.R), [PredictCh8_shift_red.R](PredictCh8_shift_red.R), [PredictCh8_sort_green.R](PredictCh8_sort_green.R), and [PredictCh8_sort_red.R](PredictCh8_sort_red.R).
 
@@ -965,7 +965,7 @@ The following scripts generate figures summarizing the results: [mkLDFitnessFigs
 
 ## Chromosome 8 SV calling with SyRI
 
-I am using `SyRI` (version 1.8.2) to call structural variants on chromosome 8 based on the 10 phased genomes. This is really a pairwise analysis and requires a designated referene genome. I am using the same two genomes as references that I used for the re-analysis:  24_0159h1 (a melanic *T. chumash*) and 24_0163h1 (a green *T. chumash*) and aligning each to all of the others. I am doing this with and without masking. The reason for using `SyRI` is that it defines breakpoints and SV types in a pretty clear and explicit manner. See [Goel et al. 2019](https://link.springer.com/article/10.1186/s13059-019-1911-0) for a description of the method, as well as [the GitHub page](https://github.com/schneebergerlab/syri) for the software.
+I am using `SyRI` (version 1.8.2) to call structural variants on chromosome 8 based on the 10 phased genomes. This is really a pairwise analysis and requires a designated reference genome. I am using the same two genomes as references that I used for the re-analysis:  24_0159h1 (a melanic *T. chumash*) and 24_0163h1 (a green *T. chumash*) and aligning each to all of the others. I am doing this with and without masking. The reason for using `SyRI` is that it defines breakpoints and SV types in a pretty clear and explicit manner. See [Goel et al. 2019](https://link.springer.com/article/10.1186/s13059-019-1911-0) for a description of the method, as well as [the GitHub page](https://github.com/schneebergerlab/syri) for the software.
 
 All of this is being done in `/uufs/chpc.utah.edu/common/home/gompert-group5/projects/t_chum_mapping/genomes_syri`; I have linked the genomes there.
 
@@ -1177,14 +1177,141 @@ busco -i braker.aa -m prot -o busco_aa_out -l insecta_odb10
 
 ```
 
-
 For genome 24_0163H1, this gave 15,738 gene models and 21,268 transcript isoforms with BUSCO profile = C:98.1% (S:72.1%,D:26.0%]) F:0.2%,M:1.7%,n:1367; similar results were obtained for genome 24_0159H1: 14,755 gene models, 20,368 transcript isoforms and BUSCO profile = C:96.2% (S:69.9%,D:26.3%),F:0.2%,M:3.6%,n:1367. The annotations are in `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/Annotation/t_chumash_24_0163_g_h1` and `/uufs/chpc.utah.edu/common/home/gompert-group4/data/timema/hic_genomes/Annotation/t_chumash_24_0159_m_h1`.
 
 We additionally summarized gene and SNP density on chromosome 8, with the former coming from these alignments. This was done to see whether the focal color-associated regions stood out as distinct with respect to either (they did have low SNP density, but not unqiuely low, whereas gene density was on the lower side perhaps but well within the chromosome distribution); see [snpGeneDensity.R](snpGeneDensity.R).
 
+## Demographic inference
+
+We fit historical demographic models with `moments` [Jouganous et al. 2017](https://academic.oup.com/genetics/article/206/3/1549/6064248), which is similar to `dadi` [Gutenkunst et al., 2009](https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1000695), to get at the extent to which HF5 and GR8 have been evolving independently.
+
+As a first step, I had to merge and filter the vcf files from HF5 and GR8. I focused inference on 3 chromosomes, 5, 6 and 8. The main interest was in 8 (becasue of its role in color) but I ran the other two for comparison. So, I first extracted the relevant chromosomes:
+
+```bash
+#!/bin/bash
+#SBATCH --time=24:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=2
+#SBATCH --mem=60G
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --qos=gompert-np
+#SBATCH --job-name=view
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+cd /scratch/general/nfs1/u6000989/merge_vcf
+
+## scaffolds 4, 5, and 6 are chromosome 8, 5, and 6
+
+bcftools view -r hap1_Chr04 -Oz -o GR8_ch8.vcf.gz morefilter_comb_f2x_gr8_green_hap1.vcf.gz
+bcftools index -c GR8_ch8.vcf.gz
+
+bcftools view -r hap1_Chr05 -Oz -o GR8_ch5.vcf.gz morefilter_comb_f2x_gr8_green_hap1.vcf.gz
+bcftools index -c GR8_ch5.vcf.gz
+
+bcftools view -r hap1_Chr06 -Oz -o GR8_ch6.vcf.gz morefilter_comb_f2x_gr8_green_hap1.vcf.gz
+bcftools index -c GR8_ch6.vcf.gz
+
+bcftools view -r hap1_Chr04 -Oz -o HF5_ch8.vcf.gz morefilter_comb_f2x_green_hap1.vcf.gz
+bcftools index -c HF5_ch8.vcf.gz
+```
+I then merged the vcf files, taking the union of the two data sets, this was done with `bcftools`
+
+```bash
+#!/bin/bash
+#SBATCH --time=24:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=2
+#SBATCH --mem=60G
+#SBATCH --account=gompert-np
+#SBATCH --partition=gompert-np
+#SBATCH --qos=gompert-np
+#SBATCH --job-name=merge
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=zach.gompert@usu.edu
+
+ml bcftools
+
+cd /scratch/general/nfs1/u6000989/merge_vcf
+
+bcftools merge -0 -m snps -Ou HF5_ch8.vcf.gz GR8_ch8.vcf.gz | \
+    bcftools view -v snps -m2 -M2 -Oz -o merged_ch8.vcf.gz
+bcftools index merged_ch8.vcf.gz
+
+bcftools merge -0 -m snps -Ou HF5_ch5.vcf.gz GR8_ch5.vcf.gz | \
+    bcftools view -v snps -m2 -M2 -Oz -o merged_ch5.vcf.gz
+bcftools index merged_ch5.vcf.gz
+
+bcftools merge -0 -m snps -Ou HF5_ch6.vcf.gz GR8_ch6.vcf.gz | \
+    bcftools view -v snps -m2 -M2 -Oz -o merged_ch6.vcf.gz
+bcftools index merged_ch6.vcf.gz
+````
+I then wanted to remove any SNPs from the merged set that were filtered out for either population (to avoid missing data because of differential filtering showing up as one population being fixed for the reference):
+
+```bash
+
+ml bcftools
+
+cd /scratch/general/nfs1/u6000989/merge_vcf
+
+## for GR8
+gunzip -c /uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/vcf_gr8/o_tchum_GR_green_chrom04.vcf.gz | bgzip  > o_tchum_GR_green_chrom04.vcf.gz
+gunzip -c /uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/vcf_gr8/o_tchum_GR_green_chrom05.vcf.gz | bgzip  > o_tchum_GR_green_chrom05.vcf.gz
+gunzip -c /uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/vcf_gr8/o_tchum_GR_green_chrom06.vcf.gz | bgzip  > o_tchum_GR_green_chrom06.vcf.gz
+
+bcftools index o_tchum_GR_green_chrom04.vcf.gz
+bcftools index o_tchum_GR_green_chrom05.vcf.gz
+bcftools index o_tchum_GR_green_chrom06.vcf.gz
+
+## scaf 4 is chr8, scafs 5 and 6 are chroms 5 and 6
+bcftools isec -C -w1 o_tchum_GR_green_chrom04.vcf.gz GR8_ch8.vcf.gz -Oz -o filt_snps_GR8_ch8.vcf.gz
+
+bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\n' filt_snps_GR8_ch8.vcf.gz > filt_snps_GR8_ch8.txt
+
+bcftools isec -C -w1 o_tchum_GR_green_chrom05.vcf.gz GR8_ch5.vcf.gz -Oz -o filt_snps_GR8_ch5.vcf.gz
+
+bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\n' filt_snps_GR8_ch5.vcf.gz > filt_snps_GR8_ch5.txt
+
+bcftools isec -C -w1 o_tchum_GR_green_chrom04.vcf.gz GR8_ch6.vcf.gz -Oz -o filt_snps_GR8_ch6.vcf.gz
+
+bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\n' filt_snps_GR8_ch6.vcf.gz > filt_snps_GR8_ch6.txt
+
+## for HF5
+gunzip -c /uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/vcfs/filtered2x_o_tchum_green_hap1_Chr04.vcf.gz | bgzip  > o_tchum_HF5_green_chrom04.vcf.gz
+gunzip -c /uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/vcfs/filtered2x_o_tchum_green_hap1_Chr05.vcf.gz | bgzip  > o_tchum_HF5_green_chrom05.vcf.gz
+gunzip -c /uufs/chpc.utah.edu/common/home/gompert-group5/data/t_chumash_wgs/vcfs/filtered2x_o_tchum_green_hap1_Chr06.vcf.gz | bgzip  > o_tchum_HF5_green_chrom06.vcf.gz
+
+bcftools index o_tchum_HF5_green_chrom04.vcf.gz
+bcftools index o_tchum_HF5_green_chrom05.vcf.gz
+bcftools index o_tchum_HF5_green_chrom06.vcf.gz
+
+## scaf 4 is chr8, scafs 5 and 6 are chroms 5 and 6
+bcftools isec -C -w1 o_tchum_HF5_green_chrom04.vcf.gz HF5_ch8.vcf.gz -Oz -o filt_snps_HF5_ch8.vcf.gz
+
+bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\n' filt_snps_HF5_ch8.vcf.gz > filt_snps_HF5_ch8.txt
+
+bcftools isec -C -w1 o_tchum_HF5_green_chrom05.vcf.gz HF5_ch5.vcf.gz -Oz -o filt_snps_HF5_ch5.vcf.gz
+
+bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\n' filt_snps_HF5_ch5.vcf.gz > filt_snps_HF5_ch5.txt
+
+bcftools isec -C -w1 o_tchum_HF5_green_chrom04.vcf.gz HF5_ch6.vcf.gz -Oz -o filt_snps_HF5_ch6.vcf.gz
+
+bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\n' filt_snps_HF5_ch6.vcf.gz > filt_snps_HF5_ch6.txt
+
+## now apply 
+perl FilterSNPsFork.pl merged_ch*.vcf.gz
+```
+
+The last step uses [FilterSNPsFork.pl](FilterSNPsFork.pl). 
+
+I was then ready for inference in `moments`. I fit four models per chromosome, strict isolation (SI), ancient migration (AM), isolation with migration (IM) and secondary contact (SC). See: [am_ch5_moments.py](am_ch5_moments.py),  [am_sub_moments.py](am_sub_moments.py), [im_ch6_moments.py](im_ch6_moments.py), [sc_ch5_moments.py](sc_ch5_moments.py), [sc_sub_moments.py](sc_sub_moments.py), [si_ch6_moments.py](si_ch6_moments.py), [am_ch6_moments.py](am_ch6_moments.py), [im_ch5_moments.py](im_ch5_moments.py), [im_sub_moments.py](im_sub_moments.py), [sc_ch6_moments.py](sc_ch6_moments.py), [si_ch5_moments.py](si_ch5_moments.py), [si_sub_moments.py](si_sub_moments.py).
+
+The AM model was the best model in all cases. I thus generated uncertainty intervals for this model alone (see the last bit of the am*py scripts). I then summarized the estiamtes in `R`: [demcalc.R](demcalc.R), [demcalc_ch5.R](demcalc_ch5.R) and [demcalc_ch6.R](demcalc_ch6.R).
+
 ## Pangome for SV visualization
 
-The main analyses focus on the comparative alignment, but I also constructed a pangenome for chromosome 8 only to visualize the complexity of chromosomal rearrangments. I did this with `cactus-minigraph` (version 3.0.1). The results are in `/gompert-group5/projects/t_chum_mapping/pangenome/`. In the end, the graph construction fails to connect the color region well across genomes; I think they are just too divergent.
+The main analyses focus on the comparative alignment, but I also constructed a pangenome for chromosome 8 only to visualize the complexity of chromosomal rearrangements. I did this with `cactus-minigraph` (version 3.0.1). The results are in `/gompert-group5/projects/t_chum_mapping/pangenome/`. In the end, the graph construction fails to connect the color region well across genomes; I think they are just too divergent.
 
 I constructed the pangenome with:
 
@@ -1265,7 +1392,7 @@ odgi sort -i Chr8.full.og  --threads 20 -P -C /scratch/general/nfs1/u6000989/odg
 odgi viz -i Chr8.full_sorted.og -o Chr8.full_sorted.svg -x 5000 -y 2000 
 ```
 
-# DNA sequence alignment--old results start here
+# DNA sequence alignment--old results start here, retained for continuity and reference only
 
 I aligned the whole genome sequence data to the *T. chumash* genome using `bwa-mem2` (version 2.0pre2).
 
