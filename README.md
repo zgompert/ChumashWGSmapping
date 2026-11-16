@@ -869,17 +869,9 @@ $pm->wait_all_children;
 
 I summarized the results from these model fits see: [calpost.pl](calpost.pl), [grabMavEffects.pl](grabMavEffects.pl), [grabMavEffectsCh8.pl](grabMavEffectsCh8.pl),  [grabMavEffectsFocal.pl](grabMavEffectsFocal.pl), [grabPips.pl](grabPips.pl), [grabPipsCh8.pl](grabPipsCh8.pl), and  [grabPipsFocal.pl](grabPipsFocal.pl), and then summarized the mapping analysis in R [summarizeGwaPoly_green.R](summarizeGwaPoly_green.R) and [summarizeGwaPoly_red.R](summarizeGwaPoly_red.R).
 
-!!NOTE TEXT BELOW NEEDS UPDATED STILL!!
+I next repeated the GWA mapping for GR8.06. See [FormatPhenoGR8.R](FormatPhenoGR8.R), [GetHetPdataGR8.R](GetHetPdataGR8.R), [SubSetHetGenoGR8.R](SubSetHetGenoGR8.R), [summarizeGwaGR.R](summarizeGwaGR.R), [grabPipsGR8.pl](grabPipsGR8.pl) and [summarizeGwaPoly_GR8.R](summarizeGwaPoly_GR8.R). 
 
-I next repeated the GWA mapping for GR8.06. See [FormatPhenoGR8.R](FormatPhenoGR8.R), [GetHetPdataGR8.R](GetHetPdataGR8.R), [SubSetHetGenoGR8.R](SubSetHetGenoGR8.R), [summarizeGwaGR.R](summarizeGwaGR.R), [grabPipsGR8.pl](grabPipsGR8.pl) and [summarizeGwaPolyGR.R](summarizeGwaPolyGR.R). 
-
-We see fairly similar results in both populations. PVEs (with CIs) are: Horse Flats, RG = 0.75 (0.57-0.92), GB = 0.63 (0.47-0.82); GR8.06, RG = 0.72 (0.60-0.91), GB = 0.60 (0.48-0.76). In both cases the color traits are highly heritable, with slightly higher heritability for RG than GB and similar values in each population.
-
-In all cases we see a clear signal on chromosome 8. There is generally more noise off of 8 (sometimes quite a bit) with the single SNP analyses than the polygenic analyses. In the polygenic analyses, we get a modest number of SNPs with non-trivial PIPs (more details below). For GB in both populations, the signal in the polygenic analyses is very much restricted to chromosome 8. For RG, there is a clear signal on 8 in the polygenic models, but also something going on with chromosome 1 (both populations) with other more modest signals elsewhere.
-
-The overall (total) number of sparse effects (QTN) from gemma is modest and exhibits uncertainty (of course) but not to a crazy extent: Horse Flats, RG = 18 (8-39), GB = 15 (5-53); GR8.06, RG = 10 (7-18), GB = 12 (3-35). Interestingly, there is some evidence that sparse effects matter more for GR8.06 than Horse Flats, though it isn't whopping, based on PGE (proportion of PVE due to sparse effects): Horse Flats, RG = 0.79 (0.60-0.96), GB = 0.77 (0.54-0.97); GR8.06, RG = 0.88 (0.70-0.99), GB = 0.90 (0.70-0.99). This combined with the slightly lower estimates of number of QTN point towards a marginally more concentrated (less polygenic) genetic basis for color at GR8.06 than Horse Flats. The SNPs with the highest PIPs are not the same for RG and GB, but, at least on chromosome 8, they are in the same general region (don't know about gene level yet), at least for the ones with the strongest signal. It also looks like, especially when thinking about RG and GB, we get a few distinct, but nearby peaks. This is all generally consistent with the NEE paper.
-
-!!!! UPDATE ABOVE ONCE WE HAVE UPDATED GR8 results!!!
+We see fairly similar results in both populations and in all cases we see a clear signal on chromosome 8. The overall (total) number of sparse effects (QTN) from gemma is modest and exhibits uncertainty (of course) but not to a crazy extent.
 
 ## Delimiting the color-associated region
 
